@@ -3,42 +3,79 @@ import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import "../Register/auth.css";
 
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "../../firebase";
+
 export default function AcademyRegister() {
   const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
     contactName: "",
     email: "",
+    password: "",
     phone: "",
     organisationName: "",
     address: "",
     city: "",
     region: "",
-    contactPreferences: [],
   });
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-  }
-
-  function togglePreference(value) {
     setForm((prev) => ({
       ...prev,
-      contactPreferences: prev.contactPreferences.includes(value)
-        ? prev.contactPreferences.filter((v) => v !== value)
-        : [...prev.contactPreferences, value],
+      [name]: value,
     }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
+    setLoading(true);
 
-    // ⬇️ ovde kasnije ide Firestore / API
-    console.log("Academy profile:", form);
+    try {
+      // 1️⃣ Create Auth user
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        form.email,
+        form.password
+      );
 
-    // nakon registracije → dashboard
-    navigate("/academy/dashboard");
+      const uid = userCredential.user.uid;
+// 🔹 USERS COLLECTION (za login & routing)
+await setDoc(doc(db, "users", uid), {
+  role: "academy",
+  profileId: uid,
+  email: form.email,
+  createdAt: serverTimestamp(),
+});
+
+      // 2️⃣ Save academy profile
+      await setDoc(doc(db, "academies", uid), {
+        contactName: form.contactName,
+        email: form.email,
+        phone: form.phone,
+        organisationName: form.organisationName,
+        address: form.address,
+        city: form.city,
+        region: form.region,
+        role: "academy",
+        createdAt: serverTimestamp(),
+      });
+
+      console.log("ACADEMY REGISTERED:", uid);
+
+      // 3️⃣ Redirect to dashboard
+      navigate(`/academy/${uid}`);
+
+    } catch (error) {
+      console.error(error);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -77,6 +114,15 @@ export default function AcademyRegister() {
               name="email"
               placeholder="Email *"
               value={form.email}
+              onChange={handleChange}
+              required
+            />
+
+            <input
+              type="password"
+              name="password"
+              placeholder="Password *"
+              value={form.password}
               onChange={handleChange}
               required
             />
@@ -140,11 +186,8 @@ export default function AcademyRegister() {
             </div>
           </div>
 
-    
-         
-
-          <Button className="primaryBtn full" type="submit">
-            Create Academy Profile
+          <Button className="primaryBtn full" type="submit" disabled={loading}>
+            {loading ? "Creating..." : "Create Academy Profile"}
           </Button>
         </form>
 

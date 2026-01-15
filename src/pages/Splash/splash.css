@@ -1,0 +1,47 @@
+.splash {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  position: relative;
+
+  background:
+    linear-gradient(to bottom, rgba(5, 25, 40, 0.72), rgba(5, 25, 40, 0.25)),
+    url("/images/tennis-bg.webp");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.splashLogo {
+  width: min(220px, 62vw);
+  height: auto;
+  z-index: 2;
+  animation: popIn 700ms ease-out both, floaty 2600ms ease-in-out infinite;
+  filter: drop-shadow(0 18px 42px rgba(0,0,0,0.45));
+}
+
+.splashGlow {
+  position: absolute;
+  width: min(360px, 80vw);
+  height: min(360px, 80vw);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 210, 95, 0.22), transparent 60%);
+  filter: blur(10px);
+  opacity: 0.9;
+  animation: glow 1800ms ease-in-out infinite;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+@keyframes glow {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50%      { transform: scale(1.05); opacity: 1; }
+}

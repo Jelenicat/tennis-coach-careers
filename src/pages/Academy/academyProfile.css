@@ -1,0 +1,315 @@
+/* ===============================
+   PAGE WRAPPER
+================================ */
+.coachProfilePage {
+  min-height: 100vh;
+  background: linear-gradient(
+      to bottom,
+      rgba(5, 25, 40, 0.85),
+      rgba(5, 25, 40, 0.95)
+    ),
+    url("/images/tennis-bg.webp");
+  background-size: cover;
+  background-position: center;
+  padding-bottom: 80px;
+}
+
+/* ===============================
+   HERO
+================================ */
+.coachHero {
+  padding: 56px 24px;
+}
+
+.coachHeroContent {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.coachInfo h1 {
+  font-size: 36px;
+  margin-bottom: 6px;
+  color: #fff;
+}
+
+.coachInfo p {
+  color: #cbd5e1;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.academyAddress {
+  font-size: 14px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* ===============================
+   INPUTS (HERO)
+================================ */
+.inputHero {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: none;
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+.inputHero.small {
+  max-width: 320px;
+}
+
+/* ===============================
+   BUTTONS
+================================ */
+.primaryBtn {
+  background: #facc15;
+  color: #000;
+  padding: 10px 22px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.secondaryBtn {
+  background: #fff;
+  color: #000;
+  padding: 10px 22px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+}
+
+.dangerBtn {
+  background: #ef4444;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+}
+
+.editActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* ===============================
+   EDIT SECTION
+================================ */
+.editSection {
+  max-width: 1100px;
+  margin: 40px auto 0;
+  padding: 0 24px;
+}
+
+.sectionTitle {
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.editCard {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  border-radius: 22px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.editCard input {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: none;
+  font-size: 14px;
+}
+
+/* ===============================
+   DASHBOARD ACTIONS
+================================ */
+.dashboardActions {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 0 24px;
+  display: flex;
+  gap: 16px;
+}
+
+/* ===============================
+   CARDS
+================================ */
+.card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  border-radius: 22px;
+  padding: 24px;
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+.card h3,
+.card h4 {
+  margin-bottom: 10px;
+}
+
+.card p {
+  font-size: 14px;
+  color: #e5e7eb;
+}
+
+/* ===============================
+   JOB FORM
+================================ */
+.card input,
+.card textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: none;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.card textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+/* ===============================
+   JOB LIST
+================================ */
+.jobsList {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.jobActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* ===============================
+   RESPONSIVE
+================================ */
+@media (max-width: 768px) {
+  .coachInfo h1 {
+    font-size: 28px;
+  }
+
+  .dashboardActions {
+    flex-direction: column;
+  }
+
+  .inputHero.small {
+    max-width: 100%;
+  }
+}
+.coachHero {
+  position: relative;
+  overflow: hidden;
+}
+
+.coachHero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(250, 204, 21, 0.08),
+    transparent 60%
+  );
+  pointer-events: none;
+}
+.card,
+.editCard {
+  transition: transform 0.35s ease, box-shadow 0.35s ease,
+    background 0.35s ease;
+}
+
+.card:hover,
+.editCard:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.primaryBtn,
+.secondaryBtn,
+.dangerBtn {
+  transition: all 0.25s ease;
+}
+
+.primaryBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(250, 204, 21, 0.4);
+}
+
+.secondaryBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(255, 255, 255, 0.25);
+}
+
+.dangerBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);
+}
+input:focus,
+textarea:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(250, 204, 21, 0.6),
+    0 0 18px rgba(250, 204, 21, 0.35);
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.coachHeroContent,
+.editSection,
+.jobsList {
+  animation: fadeUp 0.6s ease forwards;
+}
+.coachInfo h1 {
+  text-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+.dashboardActions::before {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent
+  );
+}
+.coachRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.coachRow:last-child {
+  border-bottom: none;
+}
+
+.muted {
+  color: #94a3b8;
+  font-size: 13px;
+}
