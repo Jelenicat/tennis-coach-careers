@@ -46,3 +46,17 @@ p{
   color: var(--muted);
   line-height:1.6;
 }
+/* 🔒 LOCK PAGE SCALE & TRANSFORMS */
+html, body {
+  transform: none !important;
+  zoom: 1 !important;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* prevent accidental scale */
+#root {
+  transform: none !important;
+}
