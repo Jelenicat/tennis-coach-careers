@@ -1,0 +1,45 @@
+.academyDashboard {
+  padding: 32px 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.academyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.academySub {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.academyStats {
+  margin-bottom: 32px;
+}
+
+.academyStats .card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+
+.academyJobs {
+  display: grid;
+  gap: 16px;
+}
+
+.jobCard {
+  cursor: pointer;
+}
+
+.jobCard h3 {
+  margin: 0 0 6px;
+}
+
+.jobCard small {
+  color: var(--muted);
+}

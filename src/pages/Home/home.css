@@ -1,0 +1,394 @@
+/* ================= ANIMATIONS ================= */
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes logoFloat {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ================= PAGE ================= */
+
+.home {
+  min-height: 100svh;
+  width: 100%;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(5, 25, 40, 0.5),
+      rgba(5, 25, 40, 0.95)
+    ),
+    url("/images/tennis-bg.webp");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: white;
+}
+
+/* ================= HERO ================= */
+
+.hero {
+  padding: 24px 16px 20px;
+  text-align: center;
+  max-width: 1100px;
+  margin: 0 auto;
+  animation: fadeUp 0.8s ease-out forwards;
+}
+
+/* ================= LOGO ================= */
+
+.homeLogo {
+  width: 250px;
+  height: 340px;
+  display: block;
+  margin: 0 auto -40px;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.45));
+  animation: logoFloat 1s ease-out forwards;
+}
+
+/* ================= TITLE ================= */
+
+.homeTitle {
+  margin-top: 10px;
+  margin-bottom: 4px;
+  opacity: 0;
+  animation: fadeUp 0.7s ease-out forwards;
+  animation-delay: 0.15s;
+}
+
+.homeSubtitle {
+  margin-bottom: 16px;
+  opacity: 0;
+  animation: fadeUp 0.7s ease-out forwards;
+  animation-delay: 0.25s;
+}
+
+/* ================= AUTH BUTTONS ================= */
+
+.homeAuth {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.homeAuth button {
+  width: 100%;
+  opacity: 0;
+  animation: fadeUp 0.6s ease-out forwards;
+}
+
+.homeAuth button:nth-child(1) { animation-delay: 0.35s; }
+.homeAuth button:nth-child(2) { animation-delay: 0.45s; }
+
+/* ================= ACTION CARDS ================= */
+
+.homeActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  max-width: 900px;
+  margin: 0 auto 32px;
+}
+
+.homeActionCard {
+  height: 140px;
+  padding: 14px;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  position: relative;
+  opacity: 0;
+  animation: scaleIn 0.6s ease-out forwards;
+   align-items: center;
+}
+
+.homeActionCard:nth-child(1) { animation-delay: 0.55s; }
+.homeActionCard:nth-child(2) { animation-delay: 0.65s; }
+
+.homeActionCard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.6),
+    rgba(0,0,0,0.15)
+  );
+}
+
+.homeActionContent {
+  position: relative;
+  z-index: 2;
+}
+
+.homeActionTitle {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.homeActionText {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+/* ================= ABOUT (MOBILE – OSTAVLJENO NETAKNUTO) ================= */
+
+.about {
+  max-width: 1000px;
+  margin: 0 auto 80px;
+  padding: 48px 24px 90px;
+  text-align: center;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.8),
+      rgba(255, 255, 255, 0.01)
+    ),
+    url("/images/about-bg.webp");
+  background-size: cover;
+  background-position: bottom center;
+  animation: fadeUp 0.9s ease-out forwards;
+  animation-delay: 0.8s;
+}
+
+.aboutTitle {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  color: #0b2a3d;
+}
+
+.aboutText {
+  font-size: 14px;
+  max-width: 520px;
+  margin: 0 auto;
+  color: rgba(11, 42, 61, 0.85);
+  line-height: 1.6;
+}
+
+/* ================================================= */
+/* ================= DESKTOP ONLY ================== */
+/* ================================================= */
+
+@media (min-width: 1024px) {
+
+  /* auth buttons horizontal */
+  .homeAuth {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .homeAuth button {
+    width: auto;
+    min-width: 180px;
+  }
+
+  /* desktop group (about + actions) */
+  .desktopGroup {
+    width: 100%;
+    margin: -160px auto 140px;
+    padding: 64px;
+    background:
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.92),
+        rgba(255,255,255,0.3)
+      ),
+      url("/images/about-bg.webp");
+    background-size: cover;
+    background-position: bottom center;
+    border-radius: 40px;
+    box-shadow: 0 45px 90px rgba(0,0,0,0.35);
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+
+  /* about inside desktop group */
+  .desktopGroup .about {
+    margin: 0;
+    padding: 0;
+    background: none;
+    animation: none;
+    text-align: left;
+  }
+
+  .desktopGroup .aboutTitle {
+    font-size: 28px;
+  }
+
+  .desktopGroup .aboutText {
+    font-size: 15px;
+  }
+
+  /* actions right column */
+  .desktopGroup .homeActions {
+    margin: 0;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .desktopGroup .homeActionCard {
+    height: 380px;
+  }
+}
+
+@media (min-width: 1024px) {
+
+  .about {
+    max-width: 100%;
+    margin: 0;
+    padding: 120px 32px;
+
+    border-radius: 0;
+
+    background:
+      linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.9),
+        rgba(255, 255, 255, 0.6)
+      ),
+      url("/images/about-bg.webp");
+
+    background-size: cover;
+    background-position: center;
+
+    text-align: center;
+  }
+
+  .aboutTitle {
+    font-size: 28px;
+    max-width: 900px;
+    margin: 0 auto 16px;
+  }
+
+  .aboutText {
+    font-size: 16px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+}
+@media (min-width: 1024px) {
+
+  .homeActions {
+    margin-bottom: 120px;
+  }
+
+  .homeActionCard {
+    height: 280px;      /* ⬅️ POVEĆANA VISINA */
+    padding: 24px;     /* ⬅️ više “vazduha” unutra */
+  }
+
+  .homeActionTitle {
+    font-size: 22px;   /* ⬅️ desktop čitljivije */
+  }
+
+  .homeActionText {
+    font-size: 14px;
+    max-width: 320px;
+  }
+}
+@media (min-width: 1024px) {
+
+  .homeActionCard {
+    align-items: center;     /* ⬅️ vertikalno centriranje */
+  }
+
+  .homeActionContent {
+    padding-left: 24px;     /* ⬅️ lepo odstojanje od leve ivice */
+  }
+}
+@media (min-width: 1024px) {
+
+  /* ===== HEADER ===== */
+  .desktopHeader {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+
+    background: rgba(5, 25, 40, 0.2);
+    backdrop-filter: blur(5px);
+    border-bottom: 0.5px solid rgba(255,255,255,0.01);
+  }
+
+  .desktopHeaderInner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 6px 2px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .desktopHeaderLogo {
+    height: 150px;
+    width: 100pX;
+  }
+
+  /* ===== NAV ===== */
+  .desktopNav {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .desktopNav button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    opacity: 0.85;
+  }
+
+  .desktopNav button:hover {
+    opacity: 0.5;
+  }
+
+  /* CTA dugme */
+  .headerCta {
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: #f6de59;
+    color: #0b2a3d;
+    font-weight: 500;
+    border: none;
+  }
+}
+@media (max-width: 1023px) {
+  .desktopHeader {
+    display: none;
+  }
+}
