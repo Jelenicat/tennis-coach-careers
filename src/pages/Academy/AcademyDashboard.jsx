@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../../firebase";
 import CoachList from "../Coach/CoachList";
+import { serverTimestamp } from "firebase/firestore";
 
 export default function AcademyDashboard() {
   const { id } = useParams();
@@ -27,12 +28,17 @@ const [showCoaches, setShowCoaches] = useState(false);
   const [showJobForm, setShowJobForm] = useState(false);
   const [editingJob, setEditingJob] = useState(null);
   const [jobForm, setJobForm] = useState({
-    title: "",
-    salary: "",
-    benefits: "",
-    description: "",
-    date: "",
-  });
+  title: "",
+  salary: "",
+  benefits: "",
+  description: "",
+  date: "",
+
+  country: "",
+  city: "",
+  address: "",
+});
+
 
   /* ================= FETCH ================= */
   useEffect(() => {
@@ -76,18 +82,31 @@ const [showCoaches, setShowCoaches] = useState(false);
         jobForm
       );
     } else {
-      await addDoc(collection(db, "academies", id, "jobs"), jobForm);
+     await addDoc(collection(db, "academies", id, "jobs"), {
+  ...jobForm,
+
+  academyId: id,
+  academyName: academy.organisationName, // ⬅️ KLJUČNO
+
+  createdAt: serverTimestamp(),
+});
+
     }
 
     setShowJobForm(false);
     setEditingJob(null);
     setJobForm({
-      title: "",
-      salary: "",
-      benefits: "",
-      description: "",
-      date: "",
-    });
+  title: "",
+  salary: "",
+  benefits: "",
+  description: "",
+  date: "",
+
+  country: "",
+  city: "",
+  address: "",
+});
+
 
     const snap = await getDocs(collection(db, "academies", id, "jobs"));
     setJobs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
@@ -207,13 +226,18 @@ const [showCoaches, setShowCoaches] = useState(false);
           onClick={() => {
             setShowJobForm(true);
             setEditingJob(null);
-            setJobForm({
-              title: "",
-              salary: "",
-              benefits: "",
-              description: "",
-              date: "",
-            });
+          setJobForm({
+  title: "",
+  salary: "",
+  benefits: "",
+  description: "",
+  date: "",
+
+  country: "",
+  city: "",
+  address: "",
+});
+
           }}
         >
           Add Job Post
@@ -246,6 +270,30 @@ const [showCoaches, setShowCoaches] = useState(false);
               setJobForm({ ...jobForm, title: e.target.value })
             }
           />
+          <input
+  placeholder="Country"
+  value={jobForm.country}
+  onChange={(e) =>
+    setJobForm({ ...jobForm, country: e.target.value })
+  }
+/>
+
+<input
+  placeholder="City"
+  value={jobForm.city}
+  onChange={(e) =>
+    setJobForm({ ...jobForm, city: e.target.value })
+  }
+/>
+
+<input
+  placeholder="Address"
+  value={jobForm.address}
+  onChange={(e) =>
+    setJobForm({ ...jobForm, address: e.target.value })
+  }
+/>
+
           <input
             placeholder="Salary / Budget"
             value={jobForm.salary}
@@ -298,8 +346,17 @@ const [showCoaches, setShowCoaches] = useState(false);
         <h4>{job.title}</h4>
         <p><strong>Salary:</strong> {job.salary}</p>
         <p><strong>Benefits:</strong> {job.benefits}</p>
-        <p>{job.description}</p>
+        <p><strong>Description:</strong> {job.description}</p>
         <p><strong>Date:</strong> {job.date}</p>
+<p>
+  <strong>Location:</strong>{" "}
+  {job.city}, {job.country}
+</p>
+<p>
+  <strong>Address:</strong>{" "}
+  {job.address}
+</p>
+
 
         <div className="jobActions">
           <button

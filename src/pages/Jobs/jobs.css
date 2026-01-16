@@ -1,0 +1,617 @@
+/* ===============================
+   PAGE
+=============================== */
+.jobsPage {
+  min-height: 100vh;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(5, 25, 40, 0.85),
+      rgba(5, 25, 40, 0.95)
+    ),
+    url("/images/tennis-bg.webp");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 60px 24px 80px;
+}
+
+.jobsPage h1 {
+  color: #fff;
+  font-size: clamp(28px, 3vw, 42px);
+  margin-bottom: 32px;
+  text-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+/* ===============================
+   GRID
+=============================== */
+.jobsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+}
+
+/* ===============================
+   JOB CARD – GLASS
+=============================== */
+.jobCard {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  border-radius: 22px;
+  padding: 26px;
+  color: #fff;
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.35s ease,
+    box-shadow 0.35s ease,
+    background 0.35s ease;
+}
+
+/* Fade-in on load */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.jobCard {
+  animation: fadeUp 0.5s ease both;
+}
+
+/* Glow overlay */
+.jobCard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at top left,
+    rgba(250, 204, 21, 0.25),
+    transparent 60%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+.jobCard:hover::after {
+  opacity: 1;
+}
+
+.jobCard:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.jobCard:active {
+  transform: scale(0.985);
+}
+
+/* ===============================
+   CONTENT
+=============================== */
+.jobCard h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.jobOrg {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.jobMeta {
+  font-size: 14px;
+  color: #facc15;
+  margin-bottom: 14px;
+}
+
+.jobDesc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #e5e7eb;
+  margin-bottom: 22px;
+}
+
+/* Clamp description in list view */
+.jobCard:not(.expanded) .jobDesc {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.jobBenefits {
+  font-size: 14px;
+  color: var(--accent);
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.jobAddress {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+/* ===============================
+   FOOTER
+=============================== */
+.jobFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.jobDate {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+/* Apply button */
+.jobFooter .primaryBtn {
+  background: #facc15;
+  color: #000;
+  padding: 10px 22px;
+  border-radius: 20px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.jobFooter .primaryBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(250, 204, 21, 0.4);
+}
+
+/* ===============================
+   DETAIL VIEW
+=============================== */
+.jobDetail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.jobDetail .secondaryBtn {
+  align-self: flex-start;
+  background: transparent;
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  padding: 10px 18px;
+  border-radius: 18px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.jobDetail .secondaryBtn:hover {
+  background: rgba(250, 204, 21, 0.15);
+}
+
+.jobCard.expanded {
+  cursor: default;
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(250, 204, 21, 0.15);
+}
+
+.jobCard.expanded h2 {
+  font-size: 26px;
+  margin-bottom: 12px;
+}
+
+.jobCard.expanded .jobDesc {
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.jobCard.expanded .primaryBtn {
+  margin-top: 20px;
+}
+
+/* ===============================
+   MOBILE
+=============================== */
+@media (max-width: 640px) {
+  .jobsPage {
+    padding: 40px 16px 60px;
+  }
+
+  .jobsPage h1 {
+    font-size: 24px;
+    text-align: center;
+  }
+
+  .jobsGrid {
+    gap: 16px;
+  }
+
+  .jobCard {
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .jobFooter {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .jobFooter .primaryBtn {
+    width: 100%;
+    padding: 12px 0;
+  }
+
+  .jobDetail .secondaryBtn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .jobCard.expanded .primaryBtn {
+    width: 100%;
+  }
+}
+
+/* Touch feedback */
+@media (hover: none) {
+  .jobCard:active {
+    background: rgba(255, 255, 255, 0.14);
+  }
+}
+/* ===============================
+   FILTERS
+=============================== */
+.jobsFilters {
+  max-width: 900px;
+  width: 100%;
+
+  margin: 0 auto 36px;
+  padding: 18px 20px;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 14px;
+
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  border-radius: 22px;
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* Inputs */
+.jobsFilters input {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 12px 14px;
+
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+
+  transition: all 0.25s ease;
+}
+
+.jobsFilters input::placeholder {
+  color: #9ca3af;
+}
+
+.jobsFilters input:focus {
+  border-color: #facc15;
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.25);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* Reset button */
+.jobsFilters .secondaryBtn {
+  padding: 12px 20px;
+  border-radius: 18px;
+  white-space: nowrap;
+}
+
+/* ===============================
+   FILTERS – MOBILE
+=============================== */
+@media (max-width: 640px) {
+  .jobsFilters {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 28px;
+  }
+
+  .jobsFilters input {
+    width: 100%;
+  }
+
+  .jobsFilters .secondaryBtn {
+    width: 100%;
+    text-align: center;
+  }
+}
+.jobsFilters select {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+
+.jobsFilters select option {
+  background: #051928;
+  color: #fff;
+}
+
+/* Salary slider */
+.salarySlider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #facc15;
+  font-size: 13px;
+}
+
+.salarySlider input[type="range"] {
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(
+    to right,
+    #facc15,
+    rgba(255,255,255,0.3)
+  );
+}
+
+.salarySlider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #facc15;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.8);
+}
+@keyframes slideFade {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animateFilters {
+  animation: slideFade 0.45s ease both;
+}
+.jobsCount {
+  max-width: 900px;
+  margin: 0 auto 24px;
+  color: #facc15;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: right;
+}
+@media (max-width: 640px) {
+  .jobsCount {
+    text-align: center;
+  }
+
+  .salarySlider label {
+    text-align: center;
+  }
+}
+/* ===============================
+   AUTH PROMPT
+=============================== */
+.authOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 25, 40, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.authModal {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  color: #fff;
+
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  animation: fadeUp 0.4s ease both;
+}
+
+.authModal h3 {
+  margin-bottom: 12px;
+}
+
+.authModal p {
+  color: #cbd5e1;
+  margin-bottom: 24px;
+}
+
+.authActions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.authClose {
+  margin-top: 18px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .jobCard {
+    padding: 22px 18px;
+    border-radius: 20px;
+  }
+
+  .jobCard h3 {
+    font-size: 17px;
+    line-height: 1.3;
+  }
+
+  .jobOrg {
+    font-size: 13px;
+  }
+
+  .jobMeta {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .jobDesc {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .jobBenefits {
+    font-size: 13px;
+  }
+}
+@media (max-width: 640px) {
+  .jobCard {
+    padding: 22px 18px;
+    border-radius: 20px;
+  }
+
+  .jobCard h3 {
+    font-size: 17px;
+    line-height: 1.3;
+  }
+
+  .jobOrg {
+    font-size: 13px;
+  }
+
+  .jobMeta {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .jobDesc {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .jobBenefits {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 640px) {
+  .jobsFilters {
+    border-radius: 20px;
+    padding: 18px;
+  }
+
+  .jobsFilters select,
+  .jobsFilters input {
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+
+  .salarySlider {
+    gap: 10px;
+  }
+
+  .salarySlider label {
+    font-size: 14px;
+    text-align: center;
+  }
+}
+@media (max-width: 640px) {
+  .jobFooter {
+    margin-top: 8px;
+  }
+
+  .jobFooter .primaryBtn {
+    height: 44px;
+    font-size: 15px;
+    border-radius: 22px;
+  }
+}
+@media (max-width: 640px) {
+  .jobDetail {
+    gap: 16px;
+  }
+
+  .jobCard.expanded {
+    padding: 24px 18px;
+  }
+
+  .jobCard.expanded h2 {
+    font-size: 22px;
+    line-height: 1.3;
+  }
+
+  .jobCard.expanded .jobDesc {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+}
+@media (max-width: 640px) {
+  .authModal {
+    padding: 28px 20px;
+    border-radius: 22px;
+  }
+
+  .authActions {
+    flex-direction: column;
+  }
+
+  .authActions .primaryBtn,
+  .authActions .secondaryBtn {
+    width: 100%;
+  }
+}

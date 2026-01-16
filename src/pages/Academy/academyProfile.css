@@ -148,12 +148,13 @@
   border-radius: 22px;
   padding: 24px;
   color: #fff;
-  margin-bottom: 20px;
+ 
 }
 
 .card h3,
 .card h4 {
-  margin-bottom: 10px;
+  margin-top: 2px;
+  font-size: 25px;
 }
 
 .card p {
@@ -297,19 +298,333 @@ textarea:focus {
     transparent
   );
 }
+
+/* ===============================
+   VIEW COACHES – CARD
+=============================== */
+.coachListCard {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  border-radius: 24px;
+  padding: 26px;
+  color: #fff;
+
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  animation: fadeUp 0.45s ease both;
+}
+
+/* ===============================
+   HEADER
+=============================== */
+.coachListHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.coachListHeader h3 {
+  font-size: 24px;
+  margin: 0;
+}
+
+/* ===============================
+   SEARCH
+=============================== */
+.coachSearch {
+  width: 100%;
+  margin-bottom: 22px;
+
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+
+  padding: 13px 16px;
+  color: #fff;
+  font-size: 14px;
+
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.coachSearch::placeholder {
+  color: #9ca3af;
+}
+
+.coachSearch:focus {
+  border-color: #facc15;
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.25);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* ===============================
+   COACH ROW
+=============================== */
 .coachRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+
+  padding: 16px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  transition: background 0.25s ease, transform 0.25s ease;
 }
 
 .coachRow:last-child {
   border-bottom: none;
 }
 
-.muted {
-  color: #94a3b8;
-  font-size: 13px;
+.coachRow:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
 }
+
+/* ===============================
+   LEFT SIDE (AVATAR + INFO)
+=============================== */
+.coachInfoLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.coachAvatarSmall {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.coachName {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.coachLocation {
+  font-size: 13px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+/* ===============================
+   BUTTON
+=============================== */
+.coachRow .secondaryBtn {
+  padding: 10px 20px;
+  border-radius: 18px;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+}
+
+.coachRow .secondaryBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(255, 255, 255, 0.25);
+}
+
+/* ===============================
+   EMPTY STATE
+=============================== */
+.coachEmpty {
+  color: #9ca3af;
+  font-size: 14px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+/* ===============================
+   MOBILE
+=============================== */
+@media (max-width: 640px) {
+  .coachListCard {
+    padding: 20px;
+  }
+
+  .coachRow {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .coachInfoLeft {
+    flex: 1;
+  }
+
+  .coachRow .secondaryBtn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .coachAvatarSmall {
+    width: 40px;
+    height: 40px;
+  }
+}
+/* FULLSCREEN OVERLAY */
+/* ================= COACH LIST OVERLAY ================= */
+/* ===========================
+   FIND COACH BACKGROUND
+=========================== */
+
+.coachOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(5, 25, 40, 0.55),
+      rgba(5, 25, 40, 0.15)
+    ),
+    url("/images/tennis-bg.webp");
+
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* ===========================
+   COACH LIST CARD
+=========================== */
+
+.coachListCard {
+  width: 100%;
+  max-width: 860px;
+  max-height: 80vh;
+  overflow-y: auto;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.9)
+  );
+
+  border-radius: 28px;
+  padding: 28px;
+
+  backdrop-filter: blur(14px);
+  box-shadow: 0 30px 70px rgba(0,0,0,0.45);
+
+  animation: cardEnter 0.6s ease-out forwards;
+}
+
+/* ===========================
+   HEADER
+=========================== */
+
+.coachListHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  color: #0b2a3d;
+}
+
+/* ===========================
+   SEARCH
+=========================== */
+
+.coachSearchWrap {
+  margin-bottom: 20px;
+}
+
+.coachSearch {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.85);
+  font-size: 14px;
+}
+
+.coachSearch:focus {
+  outline: none;
+  border-color: #f6de59;
+  box-shadow: 0 0 0 2px rgba(246, 222, 89, 0.35);
+}
+
+/* ===========================
+   ROW
+=========================== */
+
+.coachRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.35);
+}
+
+.coachInfoLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.coachAvatarSmall {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #f6de59;
+}
+
+.coachName {
+  font-weight: 700;
+  color: #0b2a3d;
+}
+
+.coachLocation {
+  font-size: 13px;
+  opacity: 0.7;
+  color: #0b2a3d;
+}
+
+/* ===========================
+   EMPTY
+=========================== */
+
+.coachEmpty {
+  text-align: center;
+  margin-top: 20px;
+  opacity: 0.6;
+}
+
+/* ===========================
+   ANIMATION
+=========================== */
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+

@@ -4,15 +4,41 @@ import { useEffect, useState } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import {useNavigate } from "react-router-dom";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export default function CoachProfile() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [coach, setCoach] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState(null);
 const [newProfileImage, setNewProfileImage] = useState(null);
 const [newGalleryImages, setNewGalleryImages] = useState([]);
+const [authUser, setAuthUser] = useState(undefined);
+const [userRole, setUserRole] = useState(null);
+
+useEffect(() => {
+  const auth = getAuth();
+  const unsub = onAuthStateChanged(auth, (u) => {
+    setAuthUser(u ?? null);
+  });
+  return () => unsub();
+}, []);
+
+
+
+
+
+
+// ✅ samo vlasnik profila vidi dugmad
+const isOwner =
+  userRole === "coach" &&
+  authUser &&
+  authUser.uid === id;
+
+
 
   useEffect(() => {
     async function fetchCoach() {
@@ -95,7 +121,7 @@ function handleCancel() {
 }
 
 
-  if (!coach) return null;
+
 async function removeGalleryImage(imgUrl) {
   const storage = getStorage();
 
@@ -129,7 +155,31 @@ function removeNewGalleryImage(index) {
 }
 const existingCount = formData?.galleryImages?.length || 0;
 const remainingSlots = 3 - existingCount;
+useEffect(() => {
+  if (!isOwner && editMode) setEditMode(false);
+}, [isOwner, editMode]);
+useEffect(() => {
+  if (!authUser) return;
 
+  async function fetchUserRole() {
+    const snap = await getDoc(doc(db, "users", authUser.uid));
+    if (snap.exists()) {
+      setUserRole(snap.data().role); // "coach" | "academy"
+    }
+  }
+
+  fetchUserRole();
+}, [authUser]);
+// ⏳ čekamo auth + role
+if (authUser === undefined || userRole === null) return null;
+
+// ❌ nije ulogovan
+if (authUser === null) {
+  navigate("/login", { replace: true });
+  return null;
+}
+
+if (!coach) return null;
   return (
     <div
       className="coachProfilePage"
@@ -239,30 +289,34 @@ const remainingSlots = 3 - existingCount;
               )}
 
               {/* PRIMARY CTA */}
-              {!editMode && (
-                <button className="primaryBtn">
-                  View Available Jobs
-                </button>
-              )}
+         {!editMode && isOwner && (
+  <button className="primaryBtn" onClick={() => navigate("/jobs")}>
+    View Available Jobs
+  </button>
+)}
+
 
               {/* EDIT CONTROLS */}
-              {!editMode ? (
-                <button
-                  className="secondaryBtn editBtn"
-                  onClick={() => setEditMode(true)}
-                >
-                  Edit Profile
-                </button>
-              ) : (
-                <div className="editActions">
-                  <button className="primaryBtn" onClick={handleSave}>
-                    Save
-                  </button>
-                  <button className="secondaryBtn" onClick={handleCancel}>
-                    Cancel
-                  </button>
-                </div>
-              )}
+         {isOwner && (
+  !editMode ? (
+    <button
+      className="secondaryBtn editBtn"
+      onClick={() => setEditMode(true)}
+    >
+      Edit Profile
+    </button>
+  ) : (
+    <div className="editActions">
+      <button className="primaryBtn" onClick={handleSave}>
+        Save
+      </button>
+      <button className="secondaryBtn" onClick={handleCancel}>
+        Cancel
+      </button>
+    </div>
+  )
+)}
+
             </div>
           </div>
         </div>

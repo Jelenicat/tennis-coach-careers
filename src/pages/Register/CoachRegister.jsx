@@ -176,6 +176,8 @@ for (let i = 0; i < form.galleryImages.length; i++) {
         galleryImages: galleryUrls,   // ✅
   profileImage: profileImageUrl,// ✅
       createdAt: new Date(),
+      userId: uid, // ✅ KLJUČNO
+
     });
 
  setCreatedUid(uid);

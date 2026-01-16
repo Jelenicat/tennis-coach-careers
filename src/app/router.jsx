@@ -8,6 +8,10 @@ import AcademyDashboard from "../pages/Academy/AcademyDashboard";
 import Login from "../pages/Login/Login";
 import CoachProfile from "../pages/CoachProfile/CoachProfile";
 import Splash from "../pages/Splash/Splash";
+import Jobs from "../pages/Jobs/Jobs";
+import CoachList from "../pages/Coach/CoachList";
+
+
 
 export default function AppRouter() {
   return (
@@ -21,6 +25,8 @@ export default function AppRouter() {
 
     <Route path="/academy/:id" element={<AcademyDashboard />} />
 <Route path="/login" element={<Login />} />
+<Route path="/jobs" element={<Jobs />} />
+<Route path="/coaches" element={<CoachList />} />
 
 
       {/* ✅ COACH PROFILE */}
