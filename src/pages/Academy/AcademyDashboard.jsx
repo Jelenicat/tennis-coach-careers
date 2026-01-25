@@ -13,15 +13,28 @@ import {
 import { db } from "../../firebase";
 import CoachList from "../Coach/CoachList";
 import { serverTimestamp } from "firebase/firestore";
+import { signOut, onAuthStateChanged } from "firebase/auth";
+import { auth } from "../../firebase";
+
 
 export default function AcademyDashboard() {
   const { id } = useParams();
   const navigate = useNavigate();
+async function handleLogout() {
+  const ok = window.confirm("Are you sure you want to log out?");
+  if (!ok) return;
+
+  await signOut(auth);
+navigate("/login", { replace: true });
+
+}
+
 
   const [academy, setAcademy] = useState(null);
   const [formData, setFormData] = useState(null);
   const [editMode, setEditMode] = useState(false);
 const [showCoaches, setShowCoaches] = useState(false);
+const [checkingAuth, setCheckingAuth] = useState(true);
 
   /* JOBS */
   const [jobs, setJobs] = useState([]);
@@ -38,30 +51,69 @@ const [showCoaches, setShowCoaches] = useState(false);
   city: "",
   address: "",
 });
-
-
-  /* ================= FETCH ================= */
-  useEffect(() => {
-    if (!id) return;
-
-    async function fetchAcademy() {
-      const snap = await getDoc(doc(db, "academies", id));
-      if (snap.exists()) {
-        setAcademy(snap.data());
-        setFormData(snap.data());
-      }
+/* ================= AUTH GUARD ================= */
+useEffect(() => {
+  const unsub = onAuthStateChanged(auth, async (user) => {
+    if (!user || user.uid !== id) {
+      navigate("/login", { replace: true });
+      return;
     }
 
-    async function fetchJobs() {
-      const snap = await getDocs(collection(db, "academies", id, "jobs"));
-      setJobs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const snap = await getDoc(doc(db, "users", user.uid));
+    if (!snap.exists() || snap.data().role !== "academy") {
+      navigate("/login", { replace: true });
+      return;
     }
 
-    fetchAcademy();
-    fetchJobs();
-  }, [id]);
+    setCheckingAuth(false);
+  });
 
-  if (!academy || !formData) return null;
+  return () => unsub();
+}, [navigate, id]);
+
+
+
+
+
+/* ================= FETCH ================= */
+useEffect(() => {
+  if (!id) return;
+
+  async function fetchAcademy() {
+    const snap = await getDoc(doc(db, "academies", id));
+    if (snap.exists()) {
+      setAcademy(snap.data());
+      setFormData(snap.data());
+    }
+  }
+
+  async function fetchJobs() {
+    const snap = await getDocs(collection(db, "academies", id, "jobs"));
+    setJobs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  }
+
+  fetchAcademy();
+  fetchJobs();
+}, [id]);
+
+/* ⬇️ SAD JE OK */
+if (checkingAuth) {
+  return (
+    <div className="loader">
+      <p>Checking access…</p>
+    </div>
+  );
+}
+
+  if (!academy || !formData) {
+ return (
+  <div className="loader">
+    <p>Loading academy profile…</p>
+  </div>
+);
+
+}
+
 
   /* ================= HANDLERS ================= */
   function handleChange(e) {
@@ -75,47 +127,58 @@ const [showCoaches, setShowCoaches] = useState(false);
     setEditMode(false);
   }
 
-  async function saveJob() {
-    if (editingJob) {
-      await updateDoc(
-        doc(db, "academies", id, "jobs", editingJob.id),
-        jobForm
-      );
-    } else {
-     await addDoc(collection(db, "academies", id, "jobs"), {
-  ...jobForm,
+async function saveJob() {
+  if (editingJob) {
+    await updateDoc(
+      doc(db, "academies", id, "jobs", editingJob.id),
+      jobForm
+    );
 
-  academyId: id,
-  academyName: academy.organisationName, // ⬅️ KLJUČNO
+    setJobs((prev) =>
+      prev.map((job) =>
+        job.id === editingJob.id
+          ? { ...jobForm, id: editingJob.id }
+          : job
+      )
+    );
 
-  createdAt: serverTimestamp(),
-});
+  } else {
+    const docRef = await addDoc(collection(db, "academies", id, "jobs"), {
+      ...jobForm,
+      academyId: id,
+      academyName: academy.organisationName,
+      createdAt: serverTimestamp(),
+    });
 
-    }
-
-    setShowJobForm(false);
-    setEditingJob(null);
-    setJobForm({
-  title: "",
-  salary: "",
-  benefits: "",
-  description: "",
-  date: "",
-
-  country: "",
-  city: "",
-  address: "",
-});
-
-
-    const snap = await getDocs(collection(db, "academies", id, "jobs"));
-    setJobs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    setJobs((prev) => [
+      ...prev,
+      { ...jobForm, id: docRef.id },
+    ]);
   }
 
-  async function deleteJob(jobId) {
-    await deleteDoc(doc(db, "academies", id, "jobs", jobId));
-    setJobs(jobs.filter((j) => j.id !== jobId));
-  }
+  setShowJobForm(false);
+  setEditingJob(null);
+  setJobForm({
+    title: "",
+    salary: "",
+    benefits: "",
+    description: "",
+    date: "",
+    country: "",
+    city: "",
+    address: "",
+  });
+}
+
+
+ async function deleteJob(jobId) {
+  const ok = window.confirm("Are you sure you want to delete this job post?");
+  if (!ok) return;
+
+  await deleteDoc(doc(db, "academies", id, "jobs", jobId));
+  setJobs((prev) => prev.filter((j) => j.id !== jobId));
+}
+
 
   /* ================= RENDER ================= */
   return (
@@ -164,14 +227,24 @@ const [showCoaches, setShowCoaches] = useState(false);
               </>
             )}
 
-            {!editMode ? (
-              <button
-                className="secondaryBtn"
-                onClick={() => setEditMode(true)}
-              >
-                Edit Profile
-              </button>
-            ) : (
+           {!editMode ? (
+  <div className="heroActions">
+    <button
+      className="secondaryBtn"
+      onClick={() => setEditMode(true)}
+    >
+      Edit Profile
+    </button>
+
+    <button
+      className="logoutBtn"
+      onClick={handleLogout}
+    >
+      Log out
+    </button>
+  </div>
+) : (
+
               <div className="editActions">
                 <button className="primaryBtn" onClick={handleSaveProfile}>
                   Save
@@ -220,43 +293,43 @@ const [showCoaches, setShowCoaches] = useState(false);
       )}
 
       {/* ACTIONS */}
-      <div className="dashboardActions">
-        <button
-          className="primaryBtn"
-          onClick={() => {
-            setShowJobForm(true);
-            setEditingJob(null);
-          setJobForm({
-  title: "",
-  salary: "",
-  benefits: "",
-  description: "",
-  date: "",
+     {!editMode && (
+  <div className="dashboardActions">
+    <button
+      className="primaryBtn"
+      onClick={() => {
+        setShowJobForm(true);
+        setEditingJob(null);
+        setJobForm({
+          title: "",
+          salary: "",
+          benefits: "",
+          description: "",
+          date: "",
+          country: "",
+          city: "",
+          address: "",
+        });
+      }}
+    >
+      Add Job Post
+    </button>
 
-  country: "",
-  city: "",
-  address: "",
-});
-
-          }}
-        >
-          Add Job Post
-        </button>
-
-      <button
-  className="secondaryBtn"
-  onClick={() => {
-    setShowCoaches(true);
-    setShowJobForm(false);
-    setEditingJob(null);
-  }}
->
-  View Coaches
-</button>
+    <button
+      className="secondaryBtn"
+      onClick={() => {
+        setShowCoaches(true);
+        setShowJobForm(false);
+        setEditingJob(null);
+      }}
+    >
+      View Coaches
+    </button>
+  </div>
+)}
 
 
-
-      </div>
+     
 
       {/* JOB FORM */}
    {showJobForm && !showCoaches && (

@@ -237,10 +237,15 @@
   gap: 12px;
 }
 .editBtn {
-  margin-left: 12px;
-  opacity: 0.85;
-  background:#ffffff;
+  background: rgba(255,255,255,0.85);
+  color: #0a2a46;
+  border: none;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
 }
+
 .editBtn:hover {
   background: rgba(255, 255, 255, 0.1);
   transform: translateY(-1px);
@@ -370,4 +375,48 @@
   border-radius: 999px;
   cursor: pointer;
   font-size: 14px;
+}
+
+.heroActions {
+  display: flex;
+  gap: 14px;
+  margin-top: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.heroActions button {
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 22px;
+  white-space: nowrap;
+}
+
+
+.logoutBtn {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+@media (max-width: 900px) {
+  .heroActions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .heroActions button {
+    width: 100%;
+  }
 }

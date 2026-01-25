@@ -627,4 +627,27 @@ textarea:focus {
   }
 }
 
+.heroActions {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  position: relative;
+  z-index: 5;
+}
+
+.logoutBtn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.55);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.25s ease;
+}
+
+.logoutBtn:hover {
+  background: rgba(255,255,255,0.15);
+  transform: translateY(-1px);
+}
 

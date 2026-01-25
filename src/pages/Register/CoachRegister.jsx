@@ -6,6 +6,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import { useNavigate } from "react-router-dom";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { signOut } from "firebase/auth";
 
 
 /* ================= DATA ================= */
@@ -79,6 +80,14 @@ const phoneCodes = [
 
 export default function CoachRegister() {
   const navigate = useNavigate();
+async function handleLogout() {
+  try {
+    await signOut(auth);
+    navigate("/login"); // ili "/" ili "/choose-role"
+  } catch (err) {
+    console.error("Logout error:", err);
+  }
+}
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -437,16 +446,24 @@ setSuccess(true);
       <h3>Profile created!</h3>
       <p>Your coach profile has been successfully created.</p>
 
-     <Button
-  className="primaryBtn full"
-  onClick={() => navigate(`/coach/${createdUid}`)}
->
-  View My Profile
-</Button>
+      <Button
+        className="primaryBtn full"
+        onClick={() => navigate(`/coach/${createdUid}`)}
+      >
+        View My Profile
+      </Button>
 
+      {/* ⬇️ DODAJ OVO */}
+      <button
+        onClick={handleLogout}
+        className="logoutLink"
+      >
+        Log out
+      </button>
     </div>
   </div>
 )}
+
 
         <div className="authFooter">
           Already have an account? <b>Log in</b>

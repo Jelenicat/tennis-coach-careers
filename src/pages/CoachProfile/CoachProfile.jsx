@@ -6,10 +6,23 @@ import { db } from "../../firebase";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import {useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { signOut } from "firebase/auth";
+
 
 export default function CoachProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+const auth = getAuth();
+
+async function handleLogout() {
+  const ok = window.confirm("Are you sure you want to log out?");
+  if (!ok) return;
+
+  await signOut(auth);
+  navigate("/login", { replace: true });
+}
+
+const [checkingAuth, setCheckingAuth] = useState(true);
 
   const [coach, setCoach] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -17,28 +30,33 @@ export default function CoachProfile() {
 const [newProfileImage, setNewProfileImage] = useState(null);
 const [newGalleryImages, setNewGalleryImages] = useState([]);
 const [authUser, setAuthUser] = useState(undefined);
-const [userRole, setUserRole] = useState(null);
+
 
 useEffect(() => {
   const auth = getAuth();
-  const unsub = onAuthStateChanged(auth, (u) => {
-    setAuthUser(u ?? null);
+
+  const unsub = onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    const snap = await getDoc(doc(db, "users", user.uid));
+    if (!snap.exists() || snap.data().role !== "coach") {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    setAuthUser(user);
+  
+    setCheckingAuth(false);
   });
+
   return () => unsub();
-}, []);
+}, [navigate]);
 
 
-
-
-
-
-// ✅ samo vlasnik profila vidi dugmad
-const isOwner =
-  userRole === "coach" &&
-  authUser &&
-  authUser.uid === id;
-
-
+const isOwner = authUser?.uid === id;
 
   useEffect(() => {
     async function fetchCoach() {
@@ -154,32 +172,32 @@ function removeNewGalleryImage(index) {
   );
 }
 const existingCount = formData?.galleryImages?.length || 0;
-const remainingSlots = 3 - existingCount;
+const newCount = newGalleryImages.length;
+const remainingSlots = 3 - existingCount - newCount;
+
 useEffect(() => {
   if (!isOwner && editMode) setEditMode(false);
 }, [isOwner, editMode]);
-useEffect(() => {
-  if (!authUser) return;
 
-  async function fetchUserRole() {
-    const snap = await getDoc(doc(db, "users", authUser.uid));
-    if (snap.exists()) {
-      setUserRole(snap.data().role); // "coach" | "academy"
-    }
-  }
 
-  fetchUserRole();
-}, [authUser]);
+
 // ⏳ čekamo auth + role
-if (authUser === undefined || userRole === null) return null;
-
-// ❌ nije ulogovan
-if (authUser === null) {
-  navigate("/login", { replace: true });
-  return null;
+if (checkingAuth) {
+  return (
+    <div className="loader">
+      <p>Checking access…</p>
+    </div>
+  );
 }
 
-if (!coach) return null;
+if (!coach) {
+  return (
+    <div className="loader">
+      <p>Loading profile…</p>
+    </div>
+  );
+}
+
   return (
     <div
       className="coachProfilePage"
@@ -288,34 +306,46 @@ if (!coach) return null;
                 </>
               )}
 
-              {/* PRIMARY CTA */}
-         {!editMode && isOwner && (
-  <button className="primaryBtn" onClick={() => navigate("/jobs")}>
-    View Available Jobs
-  </button>
-)}
 
 
               {/* EDIT CONTROLS */}
-         {isOwner && (
-  !editMode ? (
+{isOwner && !editMode && (
+  <div className="heroActions">
+    <button
+      className="primaryBtn"
+      onClick={() => navigate("/jobs")}
+    >
+      View Available Jobs
+    </button>
+
     <button
       className="secondaryBtn editBtn"
       onClick={() => setEditMode(true)}
     >
       Edit Profile
     </button>
-  ) : (
-    <div className="editActions">
-      <button className="primaryBtn" onClick={handleSave}>
-        Save
-      </button>
-      <button className="secondaryBtn" onClick={handleCancel}>
-        Cancel
-      </button>
-    </div>
-  )
+
+    <button
+      className="logoutBtn"
+      onClick={handleLogout}
+    >
+      Log out
+    </button>
+  </div>
 )}
+
+{isOwner && editMode && (
+  <div className="editActions">
+    <button className="primaryBtn" onClick={handleSave}>
+      Save
+    </button>
+    <button className="secondaryBtn" onClick={handleCancel}>
+      Cancel
+    </button>
+  </div>
+)}
+
+
 
             </div>
           </div>
@@ -390,14 +420,14 @@ if (!coach) return null;
       accept="image/*"
       multiple
       hidden
-    onChange={(e) =>
+onChange={(e) =>
   setNewGalleryImages(prev => {
     const incoming = Array.from(e.target.files);
-    const combined = [...prev, ...incoming];
-
-    return combined.slice(0, remainingSlots);
+    const allowed = incoming.slice(0, remainingSlots);
+    return [...prev, ...allowed];
   })
 }
+
 
     />
   </label>
