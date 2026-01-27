@@ -357,30 +357,7 @@ if (!coach) {
   </div>
 )}
 
-{showLogoutModal && (
-  <div className="modalOverlay">
-    <div className="logoutModal">
-      <h3>Sign out?</h3>
-      <p>You will be signed out of your account.</p>
 
-      <div className="logoutActions">
-        <button
-          className="secondaryBtn"
-          onClick={() => setShowLogoutModal(false)}
-        >
-          Cancel
-        </button>
-
-        <button
-          className="dangerBtn"
-          onClick={handleLogout}
-        >
-          Log out
-        </button>
-      </div>
-    </div>
-  </div>
-)}
 
 
 {isOwner && editMode && (
@@ -596,6 +573,37 @@ onChange={(e) =>
           </div>
         </div>
       </div>
+      {showLogoutModal && (
+  <div
+    className="modalOverlay"
+    onClick={() => setShowLogoutModal(false)}
+  >
+    <div
+      className="logoutModal"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3>Sign out?</h3>
+      <p>You will be signed out of your account.</p>
+
+      <div className="logoutActions">
+        <button
+          className="secondaryBtn"
+          onClick={() => setShowLogoutModal(false)}
+        >
+          Cancel
+        </button>
+
+        <button
+          className="dangerBtn"
+          onClick={handleLogout}
+        >
+          Log out
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }
