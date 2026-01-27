@@ -649,3 +649,54 @@ select:focus {
   color: #000;
   text-decoration: underline;
 }
+.membershipSelect {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.membershipOption {
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 16px;
+  padding: 18px 20px;
+  cursor: pointer;
+  display: flex;
+  gap: 14px;
+  transition: all 0.25s ease;
+}
+
+.membershipOption input {
+  display: none;
+}
+
+.membershipOption strong {
+  font-size: 16px;
+  display: block;
+}
+
+.membershipOption span {
+  color: #f5d547;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.membershipOption p {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-top: 4px;
+}
+
+.membershipOption:hover {
+  border-color: #f5d547;
+}
+
+.membershipOption.active {
+  border-color: #f5d547;
+  background: rgba(245, 213, 71, 0.08);
+}
+
+.formHint {
+  font-size: 13px;
+  opacity: 0.75;
+  margin-bottom: 14px;
+}

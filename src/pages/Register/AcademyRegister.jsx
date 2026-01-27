@@ -21,6 +21,7 @@ export default function AcademyRegister() {
     address: "",
     city: "",
     region: "",
+     membership: "",
   });
 
   function handleChange(e) {
@@ -32,6 +33,12 @@ export default function AcademyRegister() {
   }
 
   async function handleSubmit(e) {
+    if (!form.membership) {
+  alert("Please select a membership plan.");
+  setLoading(false);
+  return;
+}
+
     e.preventDefault();
     setLoading(true);
 
@@ -49,6 +56,8 @@ await setDoc(doc(db, "users", uid), {
   role: "academy",
   profileId: uid,
   email: form.email,
+   membership: form.membership,        // ⬅️
+  membershipStatus: "inactive",
   createdAt: serverTimestamp(),
 });
 
@@ -62,6 +71,8 @@ await setDoc(doc(db, "users", uid), {
         city: form.city,
         region: form.region,
         role: "academy",
+         membership: form.membership,        // ⬅️
+  membershipStatus: "inactive",
         createdAt: serverTimestamp(),
       });
 
@@ -185,6 +196,32 @@ await setDoc(doc(db, "users", uid), {
               </select>
             </div>
           </div>
+{/* ================= MEMBERSHIP ================= */}
+<div className="formSection">
+  <h3>Membership Plan</h3>
+  <p className="formHint">
+    Choose a membership plan to activate job posting features.
+  </p>
+
+  <div className="membershipSelect">
+    <label className={`membershipOption ${form.membership === "academy_basic" ? "active" : ""}`}>
+      <input
+        type="radio"
+        name="membership"
+        value="academy_basic"
+        checked={form.membership === "academy_basic"}
+        onChange={handleChange}
+        required
+      />
+
+      <div>
+        <strong>Academy Membership</strong>
+        <span>€199 / year</span>
+        <p>Post jobs, access coach profiles and contact coaches directly</p>
+      </div>
+    </label>
+  </div>
+</div>
 
           <Button className="primaryBtn full" type="submit" disabled={loading}>
             {loading ? "Creating..." : "Create Academy Profile"}

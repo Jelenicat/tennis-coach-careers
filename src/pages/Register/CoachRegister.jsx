@@ -114,6 +114,7 @@ async function handleLogout() {
     recommendationText: "",
     profileImage: null,
     galleryImages: [],
+      membership: "", 
   });
 
   function handleChange(e) {
@@ -125,6 +126,12 @@ async function handleLogout() {
   }
 
  async function handleSubmit(e) {
+  if (!form.membership) {
+  alert("Please select a membership plan.");
+  setLoading(false);
+  return;
+}
+
   e.preventDefault();
   setLoading(true);
 
@@ -142,6 +149,8 @@ await setDoc(doc(db, "users", uid), {
   role: "coach",
   profileId: uid,
   email: form.email,
+    membership: form.membership, // ⬅️
+  membershipStatus: "inactive",
   createdAt: new Date(),
 });
 
@@ -184,6 +193,8 @@ for (let i = 0; i < form.galleryImages.length; i++) {
       role: "coach",
         galleryImages: galleryUrls,   // ✅
   profileImage: profileImageUrl,// ✅
+    membership: form.membership,      // ⬅️
+  membershipStatus: "inactive", 
       createdAt: new Date(),
       userId: uid, // ✅ KLJUČNO
 
@@ -412,6 +423,31 @@ setSuccess(true);
               ))}
             </datalist>
           </div>
+{/* ================= MEMBERSHIP ================= */}
+<div className="formSection">
+  <h3>Membership Plan</h3>
+  <p className="formHint">
+    Choose a membership plan to activate your coach profile.
+  </p>
+
+  <div className="membershipSelect">
+    <label className={`membershipOption ${form.membership === "coach_basic" ? "active" : ""}`}>
+      <input
+        type="radio"
+        name="membership"
+        value="coach_basic"
+        checked={form.membership === "coach_basic"}
+        onChange={handleChange}
+        required
+      />
+      <div>
+        <strong>Coach Membership</strong>
+        <span>€99 / year</span>
+        <p>Create profile, apply for jobs, get visibility</p>
+      </div>
+    </label>
+  </div>
+</div>
 
           {/* ================= RECOMMENDATION ================= */}
           <div className="formSection">
