@@ -352,10 +352,11 @@
     justify-content: space-between;
   }
 
-  .desktopHeaderLogo {
-    height: 150px;
-    width: 100pX;
-  }
+ .desktopHeaderLogo {
+  height: 150px;
+  width: auto;
+}
+
 
   /* ===== NAV ===== */
   .desktopNav {
@@ -378,14 +379,21 @@
   }
 
   /* CTA dugme */
-  .headerCta {
-    padding: 10px 18px;
-    border-radius: 999px;
-    background: #f6de59;
-    color: #0b2a3d;
-    font-weight: 500;
-    border: none;
-  }
+.headerCta {
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: #f6de59;
+  color: #0b2a3d;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.headerCta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(246, 222, 89, 0.35);
+}
+
 }
 @media (max-width: 1023px) {
   .desktopHeader {

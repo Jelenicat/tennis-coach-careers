@@ -13,14 +13,14 @@ export default function CoachProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
 const auth = getAuth();
-
+const [showLogoutModal, setShowLogoutModal] = useState(false);
 async function handleLogout() {
-  const ok = window.confirm("Are you sure you want to log out?");
-  if (!ok) return;
+
 
   await signOut(auth);
-  navigate("/login", { replace: true });
+  navigate("/", { replace: true });
 }
+
 
 const [checkingAuth, setCheckingAuth] = useState(true);
 
@@ -31,24 +31,44 @@ const [newProfileImage, setNewProfileImage] = useState(null);
 const [newGalleryImages, setNewGalleryImages] = useState([]);
 const [authUser, setAuthUser] = useState(undefined);
 
+useEffect(() => {
+  if (!showLogoutModal) return;
+
+  const onKeyDown = (e) => {
+    if (e.key === "Escape") setShowLogoutModal(false);
+  };
+
+  window.addEventListener("keydown", onKeyDown);
+  return () => window.removeEventListener("keydown", onKeyDown);
+}, [showLogoutModal]);
+
 
 useEffect(() => {
   const auth = getAuth();
 
   const unsub = onAuthStateChanged(auth, async (user) => {
+    // ❌ Guest – nema pristup
     if (!user) {
       navigate("/login", { replace: true });
       return;
     }
 
+    // ✅ Ulogovan – proveri role
     const snap = await getDoc(doc(db, "users", user.uid));
-    if (!snap.exists() || snap.data().role !== "coach") {
+    if (!snap.exists()) {
       navigate("/login", { replace: true });
       return;
     }
 
-    setAuthUser(user);
-  
+    const role = snap.data().role;
+
+    // ❌ bilo ko osim academy ili coach
+    if (role !== "academy" && role !== "coach") {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    setAuthUser({ ...user, role });
     setCheckingAuth(false);
   });
 
@@ -56,7 +76,10 @@ useEffect(() => {
 }, [navigate]);
 
 
-const isOwner = authUser?.uid === id;
+
+
+const isOwner = authUser?.uid === id && authUser?.role === "coach";
+
 
   useEffect(() => {
     async function fetchCoach() {
@@ -327,12 +350,38 @@ if (!coach) {
 
     <button
       className="logoutBtn"
-      onClick={handleLogout}
+      onClick={() => setShowLogoutModal(true)}
     >
       Log out
     </button>
   </div>
 )}
+
+{showLogoutModal && (
+  <div className="modalOverlay">
+    <div className="logoutModal">
+      <h3>Sign out?</h3>
+      <p>You will be signed out of your account.</p>
+
+      <div className="logoutActions">
+        <button
+          className="secondaryBtn"
+          onClick={() => setShowLogoutModal(false)}
+        >
+          Cancel
+        </button>
+
+        <button
+          className="dangerBtn"
+          onClick={handleLogout}
+        >
+          Log out
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
 {isOwner && editMode && (
   <div className="editActions">

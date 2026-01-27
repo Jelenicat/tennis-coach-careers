@@ -4,6 +4,7 @@ import { db } from "../../firebase";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import "../Academy/academyProfile.css";
+import { createPortal } from "react-dom";
 
 export default function CoachList({ onClose }) {
   const navigate = useNavigate();
@@ -52,11 +53,19 @@ export default function CoachList({ onClose }) {
 
   /* ================= RENDER ================= */
   return (
-    <div className="coachOverlay" onClick={onClose}>
-      <div
-        className="coachListCard"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div
+  className="coachOverlay"
+  onClick={() => {
+    if (showAuthPrompt) return; // ⬅️ ne zatvaraj listu dok je auth otvoren
+    onClose();
+  }}
+>
+
+     <div
+  className="coachListCard"
+  onClick={(e) => e.stopPropagation()}
+>
+
         {/* HEADER */}
         <div className="coachListHeader">
           <h3>Available Coaches</h3>
@@ -115,35 +124,44 @@ export default function CoachList({ onClose }) {
         ))}
 
         {/* AUTH MODAL */}
-        {showAuthPrompt && (
-          <div
-            className="authOverlay"
-            onClick={() => setShowAuthPrompt(false)}
-          >
-            <div
-              className="authModal"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3>Login required</h3>
-              <p>You must log in to view coach profiles.</p>
+       {showAuthPrompt &&
+  createPortal(
+    <div className="authOverlay authOverlayFull">
+      <div className="authModal authModalFull" onClick={(e) => e.stopPropagation()}>
+        <h3>Login required</h3>
+        <p>You must log in to view coach profiles.</p>
 
-              <div className="authActions">
-                <button
-                  className="primaryBtn"
-                  onClick={() => navigate("/login")}
-                >
-                  Log in
-                </button>
-                <button
-                  className="secondaryBtn"
-                  onClick={() => navigate("/choose-role")}
-                >
-                  Sign up
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <div className="authActions">
+          <button
+            className="primaryBtn"
+            onClick={() => {
+              setShowAuthPrompt(false);
+              onClose?.();
+              navigate("/login");
+            }}
+          >
+            Log in
+          </button>
+
+          <button
+            className="secondaryBtn"
+            onClick={() => {
+              setShowAuthPrompt(false);
+              onClose?.();
+              navigate("/choose-role");
+            }}
+          >
+            Sign up
+          </button>
+        </div>
+
+        <button className="authClose" onClick={() => setShowAuthPrompt(false)}>
+          ✕
+        </button>
+      </div>
+    </div>,
+    document.body
+  )}
       </div>
     </div>
   );

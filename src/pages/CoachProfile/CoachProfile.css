@@ -18,7 +18,7 @@
 /* ================= HERO ================= */
 .coachHero {
   position: relative;
-  min-height: 50px;
+    min-height: clamp(240px, 35vh, 360px);
   background:
     linear-gradient(
       to bottom,
@@ -29,6 +29,14 @@
   border-radius: 0 0 28px 28px;
  padding-top: 20px;
  padding-bottom: 40px;
+   box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+}
+.coachHero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  border-radius: inherit;
 }
 
 .coachHeroContent {
@@ -82,7 +90,7 @@
 }
 
 .muted {
-  color: #5f6f82;
+   color: rgba(255, 255, 255, 0.78);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -419,4 +427,64 @@
   .heroActions button {
     width: 100%;
   }
+}
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 20, 35, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.logoutModal {
+  width: 100%;
+  max-width: 380px;
+  background: rgba(15, 40, 65, 0.95);
+  border-radius: 18px;
+  padding: 26px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+}
+
+.logoutModal h3 {
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.logoutModal p {
+  font-size: 14px;
+  color: rgba(255,255,255,0.8);
+}
+.logoutActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.logoutActions button {
+  flex: 1;
+  height: 44px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.dangerBtn {
+  background: #f5d547;
+  color: #000;
+  border: none;
+  box-shadow: 0 6px 16px rgba(245,213,71,0.45);
+}
+
+.dangerBtn:hover {
+  transform: translateY(-1px);
+}
+.logoutBtn {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.35);
+  color: white;
+}
+
+.logoutBtn:hover {
+  background: rgba(255,255,255,0.2);
 }

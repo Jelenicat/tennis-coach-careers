@@ -284,7 +284,8 @@ const [filters, setFilters] = useState({
 
       {/* ================= AUTH PROMPT (MODAL) ================= */}
       {showAuthPrompt && (
-        <div className="authOverlay" onClick={() => setShowAuthPrompt(false)}>
+        <div className="authOverlay">
+
           <div className="authModal" onClick={(e) => e.stopPropagation()}>
             <h3>Login required</h3>
             <p>You must log in or sign up to view full job details and apply.</p>

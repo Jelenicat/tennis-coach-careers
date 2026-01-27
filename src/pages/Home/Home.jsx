@@ -40,6 +40,7 @@ export default function Home() {
             src="/images/logo.png"
             alt="Tennis Coach Careers"
             className="homeLogo"
+              onClick={() => navigate("/")}
           />
 
           <h1 className="homeTitle">Tennis Coach Careers</h1>
@@ -103,7 +104,9 @@ export default function Home() {
 <section className="about">
   <h2 className="aboutTitle">About Tennis Coach Careers</h2>
   <p className="aboutText">
-    We help connect tennis coaches with jobs and career growth opportunities worldwide.
+   Tennis Coach Careers connect tennis coaches with top clubs worldwide. Discover career opportunities, grow your network, and take your coaching to the next level.
+
+Focused on careers.
   </p>
 </section>
 
