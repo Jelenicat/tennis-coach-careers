@@ -400,3 +400,262 @@
     display: none;
   }
 }
+/* ================= MEMBERSHIP ================= */
+
+.membership {
+  margin: 100px auto 0;
+  max-width: 1200px;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.membershipTitle {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.membershipSubtitle {
+  color: rgba(255,255,255,0.75);
+  margin-bottom: 48px;
+}
+
+.membershipGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+}
+
+.membershipCard {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 24px;
+  padding: 36px 28px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+  text-align: left;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.membershipCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 28px 70px rgba(0,0,0,0.45);
+}
+
+.membershipCard.highlight {
+  border: 2px solid #f5d547;
+}
+
+.membershipCard h3 {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.membershipPrice {
+  font-size: 26px;
+  font-weight: 700;
+  color: #f5d547;
+  margin-bottom: 18px;
+}
+
+.membershipDesc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 22px;
+}
+
+.membershipFeatures {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 28px;
+}
+
+.membershipFeatures li {
+  margin-bottom: 10px;
+  font-size: 14px;
+  position: relative;
+  padding-left: 18px;
+}
+
+.membershipFeatures li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #f5d547;
+  font-weight: bold;
+}
+
+/* ================= MOBILE ================= */
+
+@media (max-width: 900px) {
+  .membershipGrid {
+    grid-template-columns: 1fr;
+  }
+}
+/* ================= TESTIMONIALS ================= */
+
+.testimonials {
+  margin: 120px auto 0;
+  max-width: 1200px;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.testimonialsTitle {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.testimonialsSubtitle {
+  color: rgba(255,255,255,0.75);
+  margin-bottom: 48px;
+}
+
+.testimonialsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+
+.testimonialCard {
+  background: rgba(255,255,255,0.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 22px;
+  padding: 32px 26px;
+  box-shadow: 0 16px 45px rgba(0,0,0,0.35);
+  text-align: left;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.testimonialCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 26px 70px rgba(0,0,0,0.45);
+}
+
+.testimonialText {
+  font-size: 15px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 22px;
+}
+
+.testimonialAuthor strong {
+  display: block;
+  font-size: 14px;
+}
+
+.testimonialAuthor span {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+}
+
+/* ================= MOBILE ================= */
+
+@media (max-width: 900px) {
+  .testimonialsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+.finalCta {
+  padding: 100px 20px;
+  text-align: center;
+}
+
+.finalCta h2 {
+  font-size: 38px;
+  margin-bottom: 14px;
+}
+
+.finalCta p {
+  color: rgba(255,255,255,0.75);
+  margin-bottom: 32px;
+}
+
+.finalCtaActions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.stats {
+  padding: 80px 20px;
+}
+
+.statsGrid {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  text-align: center;
+}
+
+.statsGrid strong {
+  font-size: 36px;
+  color: #f5d547;
+  display: block;
+}
+
+.statsGrid span {
+  font-size: 14px;
+  color: rgba(255,255,255,0.75);
+}
+.faq {
+  padding: 100px 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.faq h2 {
+  text-align: center;
+  font-size: 34px;
+  margin-bottom: 40px;
+}
+
+.faqItem {
+  background: rgba(255,255,255,0.06);
+  padding: 22px 24px;
+  border-radius: 18px;
+  margin-bottom: 18px;
+}
+
+.faqItem h4 {
+  margin-bottom: 6px;
+}
+
+.faqItem p {
+  font-size: 14px;
+  color: rgba(255,255,255,0.75);
+}
+@media (max-width: 900px) {
+  .membershipGrid,
+  .testimonialsGrid,
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .finalCta h2 {
+    font-size: 30px;
+  }
+}
+.featured {
+  position: relative;
+  border: 2px solid #f5d547;
+  box-shadow: 0 25px 60px rgba(245,213,71,0.35);
+}
+
+.featuredBadge {
+  position: absolute;
+  top: -14px;
+  right: 20px;
+
+  background: linear-gradient(135deg, #f5d547, #eecb3a);
+  color: #000;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+}
