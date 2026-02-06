@@ -112,30 +112,30 @@ export default function CoachRegister() {
   }, []);
 useEffect(() => {
   if (success && createdUid) {
-    navigate(`/coach/${createdUid}`);
+    navigate("/coach-membership");
   }
 }, [success, createdUid, navigate]);
 
-  const [form, setForm] = useState({
-    fullName: "",
-    age: "",
-    nationality: "",
-    residence: "",
-    phoneCode: "+381",
-    phone: "",
-    email: "",
-    password: "",
-    about: "",
-    certifications: "",
-    playingVideo: "",
-    coachingVideo: "",
-    region: "",
-    recommenderName: "",
-    recommendationText: "",
-    profileImage: null,
 
-    membership: "",
-  });
+const [form, setForm] = useState({
+  fullName: "",
+  age: "",
+  nationality: "",
+  residence: "",
+  phoneCode: "+381",
+  phone: "",
+  email: "",
+  password: "",
+  about: "",
+  certifications: "",
+  playingVideo: "",
+  coachingVideo: "",
+  region: "",
+  recommenderName: "",
+  recommendationText: "",
+  profileImage: null,
+});
+
   function removeGalleryAt(id) {
     setGalleryItems((prev) => {
       const next = prev.filter((item) => item.id !== id);
@@ -160,10 +160,7 @@ useEffect(() => {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.membership) {
-      alert("Please select a membership plan.");
-      return;
-    }
+ 
     setLoading(true);
 
     let createdUser = null;
@@ -175,18 +172,26 @@ useEffect(() => {
         form.email,
         form.password
       );
+if (!form.email || !form.password) {
+  alert("Email and password are required");
+  return;
+}
 
       createdUser = userCredential.user;
       const uid = createdUser.uid;
       // USERS COLLECTION (login & routing)
-      await setDoc(doc(db, "users", uid), {
-        role: "coach",
-        profileId: uid,
-        email: form.email,
-        membership: form.membership,
-        membershipStatus: "inactive",
-        createdAt: serverTimestamp(),
-      });
+   await setDoc(doc(db, "users", uid), {
+  role: "coach",
+  profileId: uid,
+  email: form.email,
+
+  membershipPlan: "coach",
+  membershipActive: false,
+  membershipStartedAt: null,
+
+  createdAt: serverTimestamp(),
+});
+
 
       const storage = getStorage();
 
@@ -227,8 +232,10 @@ useEffect(() => {
         role: "coach",
         galleryImages: galleryUrls,
         profileImage: profileImageUrl,
-        membership: form.membership,
-        membershipStatus: "inactive",
+       membershipPlan: "coach",
+membershipActive: false,
+membershipStartedAt: null,
+
         createdAt: serverTimestamp(),
         userId: uid,
       });
@@ -490,32 +497,25 @@ useEffect(() => {
             </datalist>
           </div>
 
-          {/* ================= MEMBERSHIP ================= */}
-          <div className="formSection">
-            <h3>Membership Plan</h3>
+         {/* ================= MEMBERSHIP ================= */}
+<div className="formSection">
+  <h3>Membership Plan</h3>
 
-            <div className="membershipSelect">
-              <label
-                className={`membershipOption ${
-                  form.membership === "coach_basic" ? "active" : ""
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="membership"
-                  value="coach_basic"
-                  checked={form.membership === "coach_basic"}
-                  onChange={handleChange}
-                  required
-                />
-                <div>
-                  <strong>Coach Membership</strong>
-                  <span>EUR 99 / year</span>
-                  <p>Create profile, apply for jobs, get visibility</p>
-                </div>
-              </label>
-            </div>
-          </div>
+  <div className="membershipSelect">
+    <div className="membershipOption active">
+      <strong>Coach Membership</strong>
+      <span>€99 / year</span>
+      <p>
+        Apply for jobs, view salary ranges, get visibility to academies
+      </p>
+    </div>
+  </div>
+
+  <small style={{ opacity: 0.7 }}>
+    Membership will be activated after payment
+  </small>
+</div>
+
 
           {/* ================= RECOMMENDATION ================= */}
           <div className="formSection">
@@ -541,7 +541,7 @@ useEffect(() => {
      <Button
   className="primaryBtn full"
   type="submit"
-  disabled={loading || !form.membership}
+  disabled={loading}
 >
   {loading ? "Creating..." : "Create Profile"}
 </Button>

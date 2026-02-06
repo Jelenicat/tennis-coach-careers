@@ -1,0 +1,80 @@
+.membershipPage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    linear-gradient(to bottom, rgba(5,25,40,0.95), rgba(5,25,40,0.98)),
+    url("/images/tennis-bg.webp");
+  background-size: cover;
+  background-position: center;
+}
+
+.membershipCard {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(16px);
+  border-radius: 28px;
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 420px;
+
+  color: #fff;
+  text-align: center;
+
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+}
+
+.membershipCard h1 {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+.membershipSubtitle {
+  font-size: 14px;
+  opacity: 0.75;
+  margin-bottom: 28px;
+}
+
+.membershipBox {
+  background: rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 26px;
+}
+
+.membershipBox h2 {
+  font-size: 32px;
+  margin-bottom: 14px;
+  color: #facc15;
+}
+
+.membershipBox ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.membershipBox li {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.secondaryLink {
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  font-size: 13px;
+  margin-top: 16px;
+  cursor: pointer;
+}
+
+.secondaryLink:hover {
+  text-decoration: underline;
+}
+
+.membershipNote {
+  font-size: 12px;
+  opacity: 0.6;
+  margin-top: 14px;
+}
