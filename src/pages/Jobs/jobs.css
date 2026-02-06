@@ -146,8 +146,12 @@
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+
+  line-clamp: 3; /* standard (future-safe) */
+
   overflow: hidden;
 }
+
 
 .jobBenefits {
   font-size: 14px;
@@ -386,17 +390,32 @@
   color: #facc15;
   font-size: 13px;
 }
+.salarySlider input[type="range"] {
+  appearance: none;          /* standard */
+  -webkit-appearance: none; /* safari / chrome */
+}
 
 .salarySlider input[type="range"] {
-  -webkit-appearance: none;
+
   height: 4px;
   border-radius: 4px;
-  background: linear-gradient(
-    to right,
-    #facc15,
-    rgba(255,255,255,0.3)
-  );
+  background: rgba(255,255,255,0.25);
 }
+.salarySlider input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.25);
+}
+
+.salarySlider input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #facc15;
+  border: none;
+  cursor: pointer;
+}
+
 
 .salarySlider input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -655,5 +674,29 @@
   .authActions .primaryBtn,
   .authActions .secondaryBtn {
     width: 100%;
+  }
+}
+.backBtn {
+  background: transparent;
+  border: 1px solid rgba(250, 204, 21, 0.5);
+  color: #facc15;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 24px;
+
+  transition: all 0.25s ease;
+}
+
+.backBtn:hover {
+  background: rgba(250, 204, 21, 0.15);
+  transform: translateX(-2px);
+}
+@media (max-width: 640px) {
+  .backBtn {
+    width: 100%;
+    text-align: center;
   }
 }

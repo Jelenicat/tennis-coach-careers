@@ -90,7 +90,7 @@
 }
 
 .muted {
-   color: rgba(255, 255, 255, 0.78);
+   color: rgba(255, 255, 255, 0.3);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -265,6 +265,11 @@
     width: 100%;
   }
 }
+.heroRow {
+  display: flex;
+  gap: 14px; /* razmak između Nationality / Residence / Age */
+}
+
 .videoThumb {
   background-size: cover;
   background-position: center;
@@ -298,6 +303,7 @@
   font-size: 14px;
   color: rgba(255,255,255,0.85);
   margin-top: 4px;
+
 }
 
 .coachAvatar {

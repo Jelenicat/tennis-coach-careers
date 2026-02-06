@@ -791,4 +791,98 @@ textarea:focus {
   .logoutActions button {
     width: 100%;
   }
+}/* ===============================
+   HERO INPUT LAYOUT
+================================ */
+
+
+
+.heroInputRow .inputHero.small {
+  flex: 1;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .heroInputRow {
+    flex-direction: column;
+  }
+}
+/* ===============================
+   HERO FIELD – FLOATING LABEL
+================================ */
+
+.heroField.floating {
+  position: relative;
+  animation: labelFadeIn 0.45s ease forwards;
+}
+
+/* input */
+.heroField.floating input {
+  padding-top: 18px;
+}
+
+/* label – default stanje */
+.heroField.floating label {
+  position: absolute;
+  left: 2px;
+  top: 24px; /* ⬅️ OVO JE KLJUČ */
+  
+  font-size: 14px;
+  font-weight: 500;
+
+  color: rgba(15, 23, 42, 0.55);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0 6px;
+  border-radius: 6px;
+
+  pointer-events: none;
+
+   transition:
+    top 0.25s ease,
+    transform 0.25s ease,
+    color 0.2s ease;
+}
+
+
+/* popunjeno (nije fokus) */
+.heroField.floating input:not(:placeholder-shown) + label {
+  top: -8px;
+  transform: translateY(0) scale(0.85);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  color: rgba(15, 23, 42, 0.6);
+}
+
+/* fokus stanje */
+.heroField.floating input:focus + label {
+  color: #facc15;
+}
+
+/* fokus ring */
+.heroField.floating input:focus {
+  box-shadow:
+    0 0 0 2px rgba(250, 204, 21, 0.6),
+    0 0 22px rgba(250, 204, 21, 0.45);
+}
+
+/* ulazna animacija */
+@keyframes labelFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.salaryRow {
+  display: flex;
+  gap: 12px;
+}
+
+.salaryRow input {
+  flex: 1;
 }

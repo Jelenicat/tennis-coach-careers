@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./auth.css";
 import Button from "../../components/ui/Button";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { createUserWithEmailAndPassword, deleteUser } from "firebase/auth";
+import { doc, setDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import { useNavigate } from "react-router-dom";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signOut } from "firebase/auth";
+import { v4 as uuidv4 } from "uuid";
 
 
 /* ================= DATA ================= */
+
+const GALLERY_MAX = 2;
 
 
 const countries = [
@@ -76,25 +79,42 @@ const phoneCodes = [
   { code: "+91", label: "🇮🇳 India" },
 ];
 
+
 /* ================= COMPONENT ================= */
 
 export default function CoachRegister() {
   const navigate = useNavigate();
-async function handleLogout() {
-  try {
-    await signOut(auth);
-    navigate("/login"); // ili "/" ili "/choose-role"
-  } catch (err) {
-    console.error("Logout error:", err);
+  async function handleLogout() {
+    try {
+      await signOut(auth);
+      navigate("/login"); // ili "/" ili "/choose-role"
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
   }
-}
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [createdUid, setCreatedUid] = useState(null);
 
   const [profilePreview, setProfilePreview] = useState(null);
-  const [galleryPreview, setGalleryPreview] = useState([]);
+  const [galleryItems, setGalleryItems] = useState([]);
+  const profilePreviewRef = useRef(null);
+  const galleryItemsRef = useRef([]);
+
+  useEffect(() => {
+    return () => {
+      if (profilePreviewRef.current) {
+        URL.revokeObjectURL(profilePreviewRef.current);
+      }
+      galleryItemsRef.current.forEach((item) => URL.revokeObjectURL(item.preview));
+    };
+  }, []);
+useEffect(() => {
+  if (success && createdUid) {
+    navigate(`/coach/${createdUid}`);
+  }
+}, [success, createdUid, navigate]);
 
   const [form, setForm] = useState({
     fullName: "",
@@ -113,9 +133,22 @@ async function handleLogout() {
     recommenderName: "",
     recommendationText: "",
     profileImage: null,
-    galleryImages: [],
-      membership: "", 
+
+    membership: "",
   });
+  function removeGalleryAt(id) {
+    setGalleryItems((prev) => {
+      const next = prev.filter((item) => item.id !== id);
+      const removed = prev.find((item) => item.id === id);
+
+      if (removed) {
+        URL.revokeObjectURL(removed.preview);
+      }
+
+      galleryItemsRef.current = next;
+      return next;
+    });
+  }
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -125,94 +158,100 @@ async function handleLogout() {
     }));
   }
 
- async function handleSubmit(e) {
-  if (!form.membership) {
-  alert("Please select a membership plan.");
-  setLoading(false);
-  return;
-}
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!form.membership) {
+      alert("Please select a membership plan.");
+      return;
+    }
+    setLoading(true);
 
-  e.preventDefault();
-  setLoading(true);
+    let createdUser = null;
 
-  try {
-    // 1️⃣ Firebase Auth
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      form.email,
-      form.password
-    );
+    try {
+      // 1) Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        form.email,
+        form.password
+      );
 
-    const uid = userCredential.user.uid;
-    // 🔹 USERS COLLECTION (za login & routing)
-await setDoc(doc(db, "users", uid), {
-  role: "coach",
-  profileId: uid,
-  email: form.email,
-    membership: form.membership, // ⬅️
-  membershipStatus: "inactive",
-  createdAt: new Date(),
-});
+      createdUser = userCredential.user;
+      const uid = createdUser.uid;
+      // USERS COLLECTION (login & routing)
+      await setDoc(doc(db, "users", uid), {
+        role: "coach",
+        profileId: uid,
+        email: form.email,
+        membership: form.membership,
+        membershipStatus: "inactive",
+        createdAt: serverTimestamp(),
+      });
 
-const storage = getStorage();
+      const storage = getStorage();
 
-// 🔹 PROFILE IMAGE
-let profileImageUrl = "";
+      // PROFILE IMAGE
+      let profileImageUrl = "";
 
-if (form.profileImage) {
-  const profileRef = ref(storage, `coachProfiles/${uid}/profile`);
-  await uploadBytes(profileRef, form.profileImage);
-  profileImageUrl = await getDownloadURL(profileRef);
-}
+      if (form.profileImage) {
+        const profileRef = ref(storage, `coachProfiles/${uid}/profile`);
+        await uploadBytes(profileRef, form.profileImage);
+        profileImageUrl = await getDownloadURL(profileRef);
+      }
 
-// 🔹 GALLERY IMAGES
-const galleryUrls = [];
+      // GALLERY IMAGES
+      const galleryUrls = [];
 
-for (let i = 0; i < form.galleryImages.length; i++) {
-  const imgRef = ref(storage, `coachProfiles/${uid}/gallery_${i}`);
-  await uploadBytes(imgRef, form.galleryImages[i]);
-  const url = await getDownloadURL(imgRef);
-  galleryUrls.push(url);
-}
+      for (let i = 0; i < galleryItems.length; i++) {
+        const imgRef = ref(storage, `coachProfiles/${uid}/gallery_${i}`);
+        await uploadBytes(imgRef, galleryItems[i].file);
+        const url = await getDownloadURL(imgRef);
+        galleryUrls.push(url);
+      }
 
-    // 2️⃣ Firestore – coach profile
-    await setDoc(doc(db, "coaches", uid), {
-      fullName: form.fullName,
-      age: form.age,
-      nationality: form.nationality,
-      residence: form.residence,
-      phone: `${form.phoneCode}${form.phone}`,
-      email: form.email,
-      about: form.about,
-      certifications: form.certifications,
-      playingVideo: form.playingVideo,
-      coachingVideo: form.coachingVideo,
-      region: form.region,
-      recommenderName: form.recommenderName,
-      recommendationText: form.recommendationText,
-      role: "coach",
-        galleryImages: galleryUrls,   // ✅
-  profileImage: profileImageUrl,// ✅
-    membership: form.membership,      // ⬅️
-  membershipStatus: "inactive", 
-      createdAt: new Date(),
-      userId: uid, // ✅ KLJUČNO
+      // Firestore - coach profile
+      await setDoc(doc(db, "coaches", uid), {
+        fullName: form.fullName,
+        age: form.age,
+        nationality: form.nationality,
+        residence: form.residence,
+        phone: `${form.phoneCode}${form.phone}`,
+        email: form.email,
+        about: form.about,
+        certifications: form.certifications,
+        playingVideo: form.playingVideo,
+        coachingVideo: form.coachingVideo,
+        region: form.region,
+        recommenderName: form.recommenderName,
+        recommendationText: form.recommendationText,
+        role: "coach",
+        galleryImages: galleryUrls,
+        profileImage: profileImageUrl,
+        membership: form.membership,
+        membershipStatus: "inactive",
+        createdAt: serverTimestamp(),
+        userId: uid,
+      });
 
-    });
+      setCreatedUid(uid);
+      setSuccess(true);
 
- setCreatedUid(uid);
-setSuccess(true);
-
-
-    console.log("REGISTERED COACH:", uid);
-  } catch (error) {
-    console.error(error);
-    alert(error.message);
-  } finally {
-    setLoading(false);
+      console.log("REGISTERED COACH:", uid);
+    } catch (error) {
+      if (createdUser?.uid) {
+        try {
+          await deleteDoc(doc(db, "users", createdUser.uid));
+          await deleteUser(createdUser);
+        } catch (cleanupError) {
+          console.error("Cleanup error:", cleanupError);
+        }
+      }
+      console.error(error);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
   }
-}
-
 
   return (
     <div className="authPage">
@@ -319,26 +358,35 @@ setSuccess(true);
               required
             />
           </div>
-<label className="fileLabel">
-  Profile Photo
 
-  {profilePreview && (
-    <img src={profilePreview} className="coachAvatar" />
-  )}
+          {/* ================= PROFILE PHOTO ================= */}
+          <label className="fileLabel">
+            Profile Photo
+            {profilePreview && (
+              <img src={profilePreview} className="coachAvatar" />
+            )}
+          </label>
 
-  <input
-    type="file"
-    accept="image/*"
-    onChange={(e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (!file) return;
 
-      setForm((prev) => ({ ...prev, profileImage: file }));
-      setProfilePreview(URL.createObjectURL(file));
-    }}
-  />
-</label>
+              if (profilePreview) {
+                URL.revokeObjectURL(profilePreview);
+              }
 
+              setForm((prev) => ({
+                ...prev,
+                profileImage: file,
+              }));
+
+              setProfilePreview(URL.createObjectURL(file));
+              e.target.value = "";
+            }}
+          />
 
           {/* ================= PROFILE INFO ================= */}
           <div className="formSection">
@@ -351,8 +399,6 @@ setSuccess(true);
               value={form.about}
               onChange={handleChange}
             />
- 
-
 
             <input
               type="text"
@@ -378,30 +424,50 @@ setSuccess(true);
                 onChange={handleChange}
               />
             </div>
-   <label className="fileLabel">
-  Gallery Images (max 2)
 
-  <div className="galleryPreview">
-    {galleryPreview.map((src, i) => (
-      <img key={i} src={src} className="galleryThumb" />
-    ))}
-  </div>
+            {/* ================= GALLERY (FIXED) ================= */}
+            <div className="fileLabel">
+              Gallery Images (max {GALLERY_MAX})
 
-  <input
-    type="file"
-    accept="image/*"
-    multiple
-    onChange={(e) => {
-      const files = Array.from(e.target.files).slice(0, 2);
+              <div className="galleryPreview">
+                {galleryItems.map((item) => (
+                  <div key={item.id} className="galleryItem">
+                    <img src={item.preview} className="galleryThumb" />
+                    <button
+                      type="button"
+                      className="removeGalleryBtn"
+                      onClick={() => removeGalleryAt(item.id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-      setForm((prev) => ({ ...prev, galleryImages: files }));
-      setGalleryPreview(files.map((f) => URL.createObjectURL(f)));
-    }}
-  />
-</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                const incoming = Array.from(e.target.files);
+                const remaining = GALLERY_MAX - galleryItems.length;
+                if (remaining <= 0) return;
 
+                const accepted = incoming.slice(0, remaining);
 
+                const newItems = accepted.map((file) => ({
+                  id: uuidv4(),
+                  file,
+                  preview: URL.createObjectURL(file),
+                }));
 
+                const next = [...galleryItems, ...newItems];
+                setGalleryItems(next);
+                galleryItemsRef.current = next;
+                e.target.value = "";
+              }}
+            />
           </div>
 
           {/* ================= REGION ================= */}
@@ -423,31 +489,33 @@ setSuccess(true);
               ))}
             </datalist>
           </div>
-{/* ================= MEMBERSHIP ================= */}
-<div className="formSection">
-  <h3>Membership Plan</h3>
-  <p className="formHint">
-    Choose a membership plan to activate your coach profile.
-  </p>
 
-  <div className="membershipSelect">
-    <label className={`membershipOption ${form.membership === "coach_basic" ? "active" : ""}`}>
-      <input
-        type="radio"
-        name="membership"
-        value="coach_basic"
-        checked={form.membership === "coach_basic"}
-        onChange={handleChange}
-        required
-      />
-      <div>
-        <strong>Coach Membership</strong>
-        <span>€99 / year</span>
-        <p>Create profile, apply for jobs, get visibility</p>
-      </div>
-    </label>
-  </div>
-</div>
+          {/* ================= MEMBERSHIP ================= */}
+          <div className="formSection">
+            <h3>Membership Plan</h3>
+
+            <div className="membershipSelect">
+              <label
+                className={`membershipOption ${
+                  form.membership === "coach_basic" ? "active" : ""
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="membership"
+                  value="coach_basic"
+                  checked={form.membership === "coach_basic"}
+                  onChange={handleChange}
+                  required
+                />
+                <div>
+                  <strong>Coach Membership</strong>
+                  <span>EUR 99 / year</span>
+                  <p>Create profile, apply for jobs, get visibility</p>
+                </div>
+              </label>
+            </div>
+          </div>
 
           {/* ================= RECOMMENDATION ================= */}
           <div className="formSection">
@@ -470,36 +538,15 @@ setSuccess(true);
             />
           </div>
 
-         <Button className="primaryBtn full" type="submit" disabled={loading}>
+     <Button
+  className="primaryBtn full"
+  type="submit"
+  disabled={loading || !form.membership}
+>
   {loading ? "Creating..." : "Create Profile"}
 </Button>
 
         </form>
-{success && (
-  <div className="successOverlay">
-    <div className="successModal">
-      <div className="successIcon">🎾</div>
-      <h3>Profile created!</h3>
-      <p>Your coach profile has been successfully created.</p>
-
-      <Button
-        className="primaryBtn full"
-        onClick={() => navigate(`/coach/${createdUid}`)}
-      >
-        View My Profile
-      </Button>
-
-      {/* ⬇️ DODAJ OVO */}
-      <button
-        onClick={handleLogout}
-        className="logoutLink"
-      >
-        Log out
-      </button>
-    </div>
-  </div>
-)}
-
 
         <div className="authFooter">
           Already have an account? <b>Log in</b>
@@ -507,4 +554,5 @@ setSuccess(true);
       </div>
     </div>
   );
+
 }

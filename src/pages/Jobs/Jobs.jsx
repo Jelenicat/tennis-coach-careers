@@ -51,39 +51,37 @@ const [filters, setFilters] = useState({
       setCountries(uniqueCountries);
 
       // max salary for slider
-      const salaries = jobsData
-        .map((j) => Number(j.salary?.toString().replace(/\D/g, "")))
-        .filter(Boolean);
+const salaries = jobsData
+  .map((j) => Number(j.maxSalary))
+  .filter((s) => Number.isFinite(s) && s > 0);
 
-      if (salaries.length) {
-        setMaxSalary(Math.max(...salaries));
-      }
+if (salaries.length) {
+  setMaxSalary(Math.max(...salaries));
+}
+
     }
 
     fetchJobs();
   }, []);
 
-  const filteredJobs = useMemo(() => {
-    return jobs.filter((job) => {
-      const matchCountry =
-        !filters.country ||
-        job.country?.toLowerCase().includes(filters.country.toLowerCase());
+const filteredJobs = useMemo(() => {
+  return jobs.filter((job) => {
+    const matchCountry =
+      !filters.country ||
+      job.country?.toLowerCase().includes(filters.country.toLowerCase());
 
-      const matchCity =
-        !filters.city ||
-        job.city?.toLowerCase().includes(filters.city.toLowerCase());
+    const matchCity =
+      !filters.city ||
+      job.city?.toLowerCase().includes(filters.city.toLowerCase());
 
-      const salaryNumber = Number(job.salary?.toString().replace(/\D/g, ""));
+    const matchSalary =
+      !filters.minSalary ||
+      Number(job.maxSalary || 0) >= Number(filters.minSalary);
 
-      // minSalary filter (ako nema salary, tretiramo kao 0)
-      const matchSalary =
-        !filters.minSalary ||
-        (Number.isFinite(salaryNumber) ? salaryNumber : 0) >=
-          Number(filters.minSalary);
+    return matchCountry && matchCity && matchSalary;
+  });
+}, [jobs, filters]);
 
-      return matchCountry && matchCity && matchSalary;
-    });
-  }, [jobs, filters]);
 
   function requireAuth(action) {
     if (!user) {
@@ -93,8 +91,19 @@ const [filters, setFilters] = useState({
     action?.();
   }
 
+const salaryPercent =
+  maxSalary > 0 ? (filters.minSalary / maxSalary) * 100 : 0;
+
+
   return (
     <div className="jobsPage">
+      <button
+  className="backBtn"
+  onClick={() => navigate(-1)}
+>
+  ← Back
+</button>
+
       <h1>Available Coaching Jobs</h1>
 
       {/* ================= FILTERS ================= */}
@@ -124,24 +133,44 @@ const [filters, setFilters] = useState({
             />
 
             {/* SALARY SLIDER – samo za ulogovane */}
-            <div className="salarySlider" style={!user ? { opacity: 0.6 } : {}}>
-  <label>Min salary: {filters.minSalary}</label>
+<div className="salarySlider" style={!user ? { opacity: 0.6 } : {}}>
+  <label>
+    Min salary: <strong>€{filters.minSalary.toLocaleString()}</strong>
+  </label>
 
-  <input
-    type="range"
-    min="0"
-    max={user ? maxSalary : maxSalary} // može i isti max
-    step="100"
-    value={filters.minSalary}
-    disabled={!user}
-    onChange={(e) =>
-      setFilters({
-        ...filters,
-        minSalary: Number(e.target.value),
-      })
-    }
-  />
+<input
+  type="range"
+  min={0}
+  max={maxSalary}
+  step={100}
+  value={filters.minSalary}
+  disabled={!user}
+  style={{
+    background: `linear-gradient(
+      to right,
+      #facc15 0%,
+      #facc15 ${salaryPercent}%,
+      rgba(255,255,255,0.3) ${salaryPercent}%,
+      rgba(255,255,255,0.3) 100%
+    )`,
+  }}
+  onChange={(e) =>
+    setFilters({
+      ...filters,
+      minSalary: Number(e.target.value),
+    })
+  }
+/>
+
+
+
+  {!user && (
+    <small className="sliderHint">
+      Log in to filter jobs by salary
+    </small>
+  )}
 </div>
+
 
 
             <button
@@ -189,7 +218,11 @@ const [filters, setFilters] = useState({
                   <p className="jobOrg">{job.academyName}</p>
 
                   <p className="jobMeta">
-                    💰 {job.salary || "Negotiable"} • {job.address || ""}
+                  💰{" "}
+{job.minSalary && job.maxSalary
+  ? `€${job.minSalary.toLocaleString()} – €${job.maxSalary.toLocaleString()}`
+  : "Negotiable"}
+
                   </p>
 
                   <p className="jobDesc">
@@ -254,10 +287,14 @@ const [filters, setFilters] = useState({
 
             <p className="jobOrg">{selectedJob.academyName}</p>
 
-            <p className="jobMeta">
-              💰 {selectedJob.salary || "Negotiable"} • 📍 {selectedJob.country},{" "}
-              {selectedJob.city}, {selectedJob.address}
-            </p>
+          <p className="jobMeta">
+  💰{" "}
+  {selectedJob.minSalary && selectedJob.maxSalary
+    ? `€${selectedJob.minSalary.toLocaleString()} – €${selectedJob.maxSalary.toLocaleString()}`
+    : "Negotiable"} 
+  • 📍 {selectedJob.country}, {selectedJob.city}, {selectedJob.address}
+</p>
+
 
             <p className="jobAddress">{selectedJob.address}</p>
 

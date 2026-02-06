@@ -3,7 +3,15 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import {
+  getStorage,
+  ref,
+ 
+  uploadBytes,
+  getDownloadURL,
+  deleteObject
+} from "firebase/storage";
+
 import {useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { signOut } from "firebase/auth";
@@ -30,6 +38,8 @@ const [checkingAuth, setCheckingAuth] = useState(true);
 const [newProfileImage, setNewProfileImage] = useState(null);
 const [newGalleryImages, setNewGalleryImages] = useState([]);
 const [authUser, setAuthUser] = useState(undefined);
+const [deletedGalleryImages, setDeletedGalleryImages] = useState([]);
+const GALLERY_MAX = 2;
 
 useEffect(() => {
   if (!showLogoutModal) return;
@@ -145,11 +155,27 @@ updatedData.galleryImages = [
 }
 
   await updateDoc(doc(db, "coaches", id), updatedData);
+
+  if (deletedGalleryImages.length > 0) {
+    try {
+      await Promise.all(
+        deletedGalleryImages.map((imgUrl) =>
+      deleteObject(ref(storage, imgUrl))
+
+
+        )
+      );
+    } catch (deleteError) {
+      console.error("Gallery cleanup error:", deleteError);
+    }
+  }
+
   setCoach(updatedData);
   setFormData(updatedData);
   setEditMode(false);
   setNewProfileImage(null);
   setNewGalleryImages([]);
+  setDeletedGalleryImages([]);
 
 }
 
@@ -158,28 +184,23 @@ function handleCancel() {
   setFormData(coach);
   setNewProfileImage(null);
   setNewGalleryImages([]);
+  setDeletedGalleryImages([]);
   setEditMode(false);
 }
 
 
 
-async function removeGalleryImage(imgUrl) {
-  const storage = getStorage();
-
-  // obriši iz storage-a
-  const imgRef = ref(storage, imgUrl);
-  await deleteObject(imgRef);
-
-  // ukloni iz state-a
- const updatedImages = (formData.galleryImages || []).filter(
-  (img) => img !== imgUrl
-);
-
+function removeGalleryImage(imgUrl) {
+  const updatedImages = (formData.galleryImages || []).filter(
+    (img) => img !== imgUrl
+  );
 
   setFormData((prev) => ({
     ...prev,
     galleryImages: updatedImages,
   }));
+
+  setDeletedGalleryImages((prev) => [...prev, imgUrl]);
 }
 
   function getYoutubeThumbnail(url) {
@@ -196,7 +217,8 @@ function removeNewGalleryImage(index) {
 }
 const existingCount = formData?.galleryImages?.length || 0;
 const newCount = newGalleryImages.length;
-const remainingSlots = 3 - existingCount - newCount;
+const remainingSlots = GALLERY_MAX - existingCount - newCount;
+
 
 useEffect(() => {
   if (!isOwner && editMode) setEditMode(false);
@@ -208,7 +230,7 @@ useEffect(() => {
 if (checkingAuth) {
   return (
     <div className="loader">
-      <p>Checking access…</p>
+      <p>Checking access...</p>
     </div>
   );
 }
@@ -216,7 +238,7 @@ if (checkingAuth) {
 if (!coach) {
   return (
     <div className="loader">
-      <p>Loading profile…</p>
+      <p>Loading profile...</p>
     </div>
   );
 }
@@ -319,11 +341,11 @@ if (!coach) {
                   <h1>{coach.fullName}</h1>
 
 <p>
-  {coach.nationality} • {coach.residence} • {coach.age} years
+  {coach.nationality} - {coach.residence} - {coach.age} years
 </p>
 
 <p className="regionLine">
-  <strong>Region:</strong> {coach.region || "—"}
+  <strong>Region:</strong> {coach.region || "-"}
 </p>
 
                 </>
@@ -412,7 +434,7 @@ if (!coach) {
             className="removeExperienceBtn"
             onClick={() => removeGalleryImage(img)}
           >
-            ✕
+            x
           </button>
         )}
       </div>
@@ -429,7 +451,7 @@ if (!coach) {
         className="removeExperienceBtn"
         onClick={() => removeNewGalleryImage(i)}
       >
-        ✕
+        x
       </button>
     </div>
   ))}
@@ -446,13 +468,15 @@ if (!coach) {
       accept="image/*"
       multiple
       hidden
-onChange={(e) =>
+onChange={(e) => {
   setNewGalleryImages(prev => {
     const incoming = Array.from(e.target.files);
     const allowed = incoming.slice(0, remainingSlots);
     return [...prev, ...allowed];
-  })
-}
+  });
+  e.target.value = "";
+}}
+
 
 
     />
@@ -607,3 +631,17 @@ onChange={(e) =>
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
