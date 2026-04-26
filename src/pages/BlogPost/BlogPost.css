@@ -1,0 +1,82 @@
+.blogPostPage {
+  min-height: 100vh;
+  padding: 60px 20px;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(5, 25, 40, 0.78),
+      rgba(5, 25, 40, 0.96)
+    ),
+    url("/images/tennis-bg.webp");
+  background-size: cover;
+  background-position: center;
+  color: white;
+}
+
+.blogPostCard {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 32px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.45);
+}
+
+.blogPostMedia {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+  display: block;
+  border-radius: 22px;
+  margin-bottom: 30px;
+}
+
+.blogPostCard h1 {
+  font-size: 42px;
+  margin-bottom: 16px;
+}
+
+.blogPostExcerpt {
+  font-size: 18px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 30px;
+}
+
+.blogPostContent {
+  white-space: pre-line;
+  font-size: 16px;
+  line-height: 1.9;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.blogBackBtn {
+  border: none;
+  margin-bottom: 24px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: #f6de59;
+  color: #0b2a3d;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .blogPostPage {
+    padding: 32px 14px;
+  }
+
+  .blogPostCard {
+    padding: 22px;
+    border-radius: 22px;
+  }
+
+  .blogPostCard h1 {
+    font-size: 30px;
+  }
+
+  .blogPostMedia {
+    max-height: 340px;
+  }
+}

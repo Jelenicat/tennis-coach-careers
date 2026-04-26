@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import "../Register/auth.css";
 
@@ -7,10 +6,12 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 
-export default function AcademyRegister() {
-  const navigate = useNavigate();
+const EMAIL_API_URL =
+  "https://email-api-vert-beta.vercel.app/api/send-registration-request";
 
+export default function AcademyRegister() {
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const [form, setForm] = useState({
     contactName: "",
@@ -21,29 +22,39 @@ export default function AcademyRegister() {
     address: "",
     city: "",
     region: "",
-     membership: "",
+    acceptedTerms: false,
   });
 
   function handleChange(e) {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+
     setForm((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   }
 
-  async function handleSubmit(e) {
-    if (!form.membership) {
-  alert("Please select a membership plan.");
-  setLoading(false);
-  return;
-}
+  async function sendAdminEmail(payload) {
+    await fetch(EMAIL_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  }
 
+  async function handleSubmit(e) {
     e.preventDefault();
+
+    if (!form.acceptedTerms) {
+      alert("Please accept Terms of Use and Privacy Policy.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // 1️⃣ Create Auth user
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         form.email,
@@ -51,17 +62,21 @@ export default function AcademyRegister() {
       );
 
       const uid = userCredential.user.uid;
-// 🔹 USERS COLLECTION (za login & routing)
-await setDoc(doc(db, "users", uid), {
-  role: "academy",
-  profileId: uid,
-  email: form.email,
-   membership: form.membership,        // ⬅️
-  membershipStatus: "inactive",
-  createdAt: serverTimestamp(),
-});
 
-      // 2️⃣ Save academy profile
+      await setDoc(doc(db, "users", uid), {
+        role: "academy",
+        profileId: uid,
+        email: form.email,
+
+        approvalStatus: "pending",
+        profileVisible: false,
+
+        approvedAt: null,
+        expiresAt: null,
+
+        createdAt: serverTimestamp(),
+      });
+
       await setDoc(doc(db, "academies", uid), {
         contactName: form.contactName,
         email: form.email,
@@ -70,23 +85,59 @@ await setDoc(doc(db, "users", uid), {
         address: form.address,
         city: form.city,
         region: form.region,
+
         role: "academy",
-         membership: form.membership,        // ⬅️
-  membershipStatus: "inactive",
+
+        approvalStatus: "pending",
+        profileVisible: false,
+
+        approvedAt: null,
+        expiresAt: null,
+
         createdAt: serverTimestamp(),
       });
 
-      console.log("ACADEMY REGISTERED:", uid);
+      await sendAdminEmail({
+        type: "academy",
+        uid,
+        email: form.email,
+        contactName: form.contactName,
+        organisationName: form.organisationName,
+        phone: form.phone,
+        address: form.address,
+        city: form.city,
+        region: form.region,
+      });
 
-      // 3️⃣ Redirect to dashboard
-      navigate(`/academy/${uid}`);
-
+      setSuccess(true);
     } catch (error) {
       console.error(error);
       alert(error.message);
     } finally {
       setLoading(false);
     }
+  }
+
+  if (success) {
+    return (
+      <div className="authPage">
+        <div className="authCard">
+          <img
+            src="/images/logo.png"
+            alt="Tennis Coach Careers"
+            className="authLogo"
+          />
+
+          <h2 style={{ textAlign: "center" }}>
+            Request sent successfully
+          </h2>
+
+          <p className="pendingNotice">
+            Your profile is under review. We will contact you soon.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -107,12 +158,10 @@ await setDoc(doc(db, "users", uid), {
         </p>
 
         <form onSubmit={handleSubmit}>
-          {/* CONTACT */}
           <div className="formSection">
             <h3>Contact Information</h3>
 
             <input
-              type="text"
               name="contactName"
               placeholder="Contact name *"
               value={form.contactName}
@@ -121,8 +170,8 @@ await setDoc(doc(db, "users", uid), {
             />
 
             <input
-              type="email"
               name="email"
+              type="email"
               placeholder="Email *"
               value={form.email}
               onChange={handleChange}
@@ -130,8 +179,8 @@ await setDoc(doc(db, "users", uid), {
             />
 
             <input
-              type="password"
               name="password"
+              type="password"
               placeholder="Password *"
               value={form.password}
               onChange={handleChange}
@@ -139,21 +188,18 @@ await setDoc(doc(db, "users", uid), {
             />
 
             <input
-              type="tel"
               name="phone"
-              placeholder="Contact number *"
+              placeholder="Phone *"
               value={form.phone}
               onChange={handleChange}
               required
             />
           </div>
 
-          {/* ORGANISATION */}
           <div className="formSection">
             <h3>Organisation</h3>
 
             <input
-              type="text"
               name="organisationName"
               placeholder="Organisation name *"
               value={form.organisationName}
@@ -162,7 +208,6 @@ await setDoc(doc(db, "users", uid), {
             />
 
             <input
-              type="text"
               name="address"
               placeholder="Address *"
               value={form.address}
@@ -172,7 +217,6 @@ await setDoc(doc(db, "users", uid), {
 
             <div className="twoCols">
               <input
-                type="text"
                 name="city"
                 placeholder="City *"
                 value={form.city}
@@ -189,48 +233,29 @@ await setDoc(doc(db, "users", uid), {
                 <option value="">Choose region *</option>
                 <option value="Europe">Europe</option>
                 <option value="North America">North America</option>
-                <option value="South America">South America</option>
                 <option value="Asia">Asia</option>
-                <option value="Africa">Africa</option>
-                <option value="Australia">Australia</option>
               </select>
             </div>
           </div>
-{/* ================= MEMBERSHIP ================= */}
-<div className="formSection">
-  <h3>Membership Plan</h3>
-  <p className="formHint">
-    Choose a membership plan to activate job posting features.
-  </p>
 
-  <div className="membershipSelect">
-    <label className={`membershipOption ${form.membership === "academy_basic" ? "active" : ""}`}>
-      <input
-        type="radio"
-        name="membership"
-        value="academy_basic"
-        checked={form.membership === "academy_basic"}
-        onChange={handleChange}
-        required
-      />
+          <label className="termsCheck">
+            <input
+              type="checkbox"
+              name="acceptedTerms"
+              checked={form.acceptedTerms}
+              onChange={handleChange}
+              required
+            />
+            <span>
+              I agree to <a href="/terms" target="_blank">Terms</a> and{" "}
+              <a href="/privacy" target="_blank">Privacy Policy</a>
+            </span>
+          </label>
 
-      <div>
-        <strong>Academy Membership</strong>
-        <span>€199 / year</span>
-        <p>Post jobs, access coach profiles and contact coaches directly</p>
-      </div>
-    </label>
-  </div>
-</div>
-
-          <Button className="primaryBtn full" type="submit" disabled={loading}>
-            {loading ? "Creating..." : "Create Academy Profile"}
+          <Button className="primaryBtn full" disabled={loading}>
+            {loading ? "Sending..." : "Create Profile"}
           </Button>
         </form>
-
-        <div className="authFooter">
-          You will be able to post multiple job listings after registration
-        </div>
       </div>
     </div>
   );

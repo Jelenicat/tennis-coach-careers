@@ -1,19 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import "./auth.css";
 import Button from "../../components/ui/Button";
-import { createUserWithEmailAndPassword, deleteUser } from "firebase/auth";
+import { createUserWithEmailAndPassword, deleteUser, signOut } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
-import { useNavigate } from "react-router-dom";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { signOut } from "firebase/auth";
 import { v4 as uuidv4 } from "uuid";
 
-
-/* ================= DATA ================= */
+const EMAIL_API_URL =
+  "https://email-api-vert-beta.vercel.app/api/send-registration-request";
 
 const GALLERY_MAX = 2;
-
 
 const countries = [
   "Serbia",
@@ -79,67 +76,61 @@ const phoneCodes = [
   { code: "+91", label: "🇮🇳 India" },
 ];
 
-
-/* ================= COMPONENT ================= */
-
 export default function CoachRegister() {
-  const navigate = useNavigate();
-  async function handleLogout() {
-    try {
-      await signOut(auth);
-      navigate("/login"); // ili "/" ili "/choose-role"
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
-  }
-
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [createdUid, setCreatedUid] = useState(null);
 
   const [profilePreview, setProfilePreview] = useState(null);
   const [galleryItems, setGalleryItems] = useState([]);
+
   const profilePreviewRef = useRef(null);
   const galleryItemsRef = useRef([]);
+
+  const [form, setForm] = useState({
+    fullName: "",
+    age: "",
+    nationality: "",
+    residence: "",
+    phoneCode: "+381",
+    phone: "",
+    email: "",
+    password: "",
+    about: "",
+    certifications: "",
+    playingVideo: "",
+    coachingVideo: "",
+    region: "",
+    recommenderName: "",
+    recommendationText: "",
+    profileImage: null,
+    acceptedTerms: false,
+  });
 
   useEffect(() => {
     return () => {
       if (profilePreviewRef.current) {
         URL.revokeObjectURL(profilePreviewRef.current);
       }
-      galleryItemsRef.current.forEach((item) => URL.revokeObjectURL(item.preview));
+
+      galleryItemsRef.current.forEach((item) => {
+        URL.revokeObjectURL(item.preview);
+      });
     };
   }, []);
-useEffect(() => {
-  if (success && createdUid) {
-    navigate("/coach-membership");
+
+  function handleChange(e) {
+    const { name, value, type, checked } = e.target;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   }
-}, [success, createdUid, navigate]);
-
-
-const [form, setForm] = useState({
-  fullName: "",
-  age: "",
-  nationality: "",
-  residence: "",
-  phoneCode: "+381",
-  phone: "",
-  email: "",
-  password: "",
-  about: "",
-  certifications: "",
-  playingVideo: "",
-  coachingVideo: "",
-  region: "",
-  recommenderName: "",
-  recommendationText: "",
-  profileImage: null,
-});
 
   function removeGalleryAt(id) {
     setGalleryItems((prev) => {
-      const next = prev.filter((item) => item.id !== id);
       const removed = prev.find((item) => item.id === id);
+      const next = prev.filter((item) => item.id !== id);
 
       if (removed) {
         URL.revokeObjectURL(removed.preview);
@@ -150,52 +141,58 @@ const [form, setForm] = useState({
     });
   }
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  async function sendAdminEmail(payload) {
+    await fetch(EMAIL_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
- 
+
+    if (!form.email || !form.password) {
+      alert("Email and password are required.");
+      return;
+    }
+
+    if (!form.acceptedTerms) {
+      alert("Please accept Terms of Use and Privacy Policy.");
+      return;
+    }
+
     setLoading(true);
 
     let createdUser = null;
 
     try {
-      // 1) Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         form.email,
         form.password
       );
-if (!form.email || !form.password) {
-  alert("Email and password are required");
-  return;
-}
 
       createdUser = userCredential.user;
       const uid = createdUser.uid;
-      // USERS COLLECTION (login & routing)
-   await setDoc(doc(db, "users", uid), {
-  role: "coach",
-  profileId: uid,
-  email: form.email,
 
-  membershipPlan: "coach",
-  membershipActive: false,
-  membershipStartedAt: null,
+      await setDoc(doc(db, "users", uid), {
+        role: "coach",
+        profileId: uid,
+        email: form.email,
 
-  createdAt: serverTimestamp(),
-});
+        approvalStatus: "pending",
+        profileVisible: false,
+        approvedAt: null,
+        expiresAt: null,
 
+        createdAt: serverTimestamp(),
+      });
 
       const storage = getStorage();
 
-      // PROFILE IMAGE
       let profileImageUrl = "";
 
       if (form.profileImage) {
@@ -204,7 +201,6 @@ if (!form.email || !form.password) {
         profileImageUrl = await getDownloadURL(profileRef);
       }
 
-      // GALLERY IMAGES
       const galleryUrls = [];
 
       for (let i = 0; i < galleryItems.length; i++) {
@@ -214,7 +210,6 @@ if (!form.email || !form.password) {
         galleryUrls.push(url);
       }
 
-      // Firestore - coach profile
       await setDoc(doc(db, "coaches", uid), {
         fullName: form.fullName,
         age: form.age,
@@ -229,35 +224,74 @@ if (!form.email || !form.password) {
         region: form.region,
         recommenderName: form.recommenderName,
         recommendationText: form.recommendationText,
+
         role: "coach",
+        userId: uid,
+
         galleryImages: galleryUrls,
         profileImage: profileImageUrl,
-       membershipPlan: "coach",
-membershipActive: false,
-membershipStartedAt: null,
+
+        approvalStatus: "pending",
+        profileVisible: false,
+        approvedAt: null,
+        expiresAt: null,
 
         createdAt: serverTimestamp(),
-        userId: uid,
       });
 
-      setCreatedUid(uid);
-      setSuccess(true);
+      await sendAdminEmail({
+        type: "coach",
+        uid,
+        email: form.email,
+        fullName: form.fullName,
+        age: form.age,
+        phone: `${form.phoneCode}${form.phone}`,
+        nationality: form.nationality,
+        residence: form.residence,
+        region: form.region,
+        certifications: form.certifications,
+      });
 
-      console.log("REGISTERED COACH:", uid);
+      await signOut(auth);
+      setSuccess(true);
     } catch (error) {
       if (createdUser?.uid) {
         try {
           await deleteDoc(doc(db, "users", createdUser.uid));
+          await deleteDoc(doc(db, "coaches", createdUser.uid));
           await deleteUser(createdUser);
         } catch (cleanupError) {
           console.error("Cleanup error:", cleanupError);
         }
       }
+
       console.error(error);
       alert(error.message);
     } finally {
       setLoading(false);
     }
+  }
+
+  if (success) {
+    return (
+      <div className="authPage">
+        <div className="authCard">
+          <img
+            src="/images/logo.png"
+            alt="Tennis Coach Careers"
+            className="authLogo"
+          />
+
+          <h2 style={{ textAlign: "center" }}>
+            Request sent successfully
+          </h2>
+
+          <p className="pendingNotice">
+            Your coach profile is under review. We will contact you soon.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -278,7 +312,6 @@ membershipStartedAt: null,
         </p>
 
         <form onSubmit={handleSubmit}>
-          {/* ================= PERSONAL INFO ================= */}
           <div className="formSection">
             <h3>Personal Information</h3>
 
@@ -366,11 +399,10 @@ membershipStartedAt: null,
             />
           </div>
 
-          {/* ================= PROFILE PHOTO ================= */}
           <label className="fileLabel">
             Profile Photo
             {profilePreview && (
-              <img src={profilePreview} className="coachAvatar" />
+              <img src={profilePreview} className="coachAvatar" alt="Preview" />
             )}
           </label>
 
@@ -385,17 +417,20 @@ membershipStartedAt: null,
                 URL.revokeObjectURL(profilePreview);
               }
 
+              const previewUrl = URL.createObjectURL(file);
+
               setForm((prev) => ({
                 ...prev,
                 profileImage: file,
               }));
 
-              setProfilePreview(URL.createObjectURL(file));
+              setProfilePreview(previewUrl);
+              profilePreviewRef.current = previewUrl;
+
               e.target.value = "";
             }}
           />
 
-          {/* ================= PROFILE INFO ================= */}
           <div className="formSection">
             <h3>Profile Information</h3>
 
@@ -423,6 +458,7 @@ membershipStartedAt: null,
                 value={form.playingVideo}
                 onChange={handleChange}
               />
+
               <input
                 type="url"
                 placeholder="Coaching Video URL"
@@ -432,14 +468,17 @@ membershipStartedAt: null,
               />
             </div>
 
-            {/* ================= GALLERY (FIXED) ================= */}
             <div className="fileLabel">
               Gallery Images (max {GALLERY_MAX})
 
               <div className="galleryPreview">
                 {galleryItems.map((item) => (
                   <div key={item.id} className="galleryItem">
-                    <img src={item.preview} className="galleryThumb" />
+                    <img
+                      src={item.preview}
+                      className="galleryThumb"
+                      alt="Gallery preview"
+                    />
                     <button
                       type="button"
                       className="removeGalleryBtn"
@@ -459,6 +498,7 @@ membershipStartedAt: null,
               onChange={(e) => {
                 const incoming = Array.from(e.target.files);
                 const remaining = GALLERY_MAX - galleryItems.length;
+
                 if (remaining <= 0) return;
 
                 const accepted = incoming.slice(0, remaining);
@@ -470,14 +510,15 @@ membershipStartedAt: null,
                 }));
 
                 const next = [...galleryItems, ...newItems];
+
                 setGalleryItems(next);
                 galleryItemsRef.current = next;
+
                 e.target.value = "";
               }}
             />
           </div>
 
-          {/* ================= REGION ================= */}
           <div className="formSection">
             <h3>Region</h3>
 
@@ -497,27 +538,6 @@ membershipStartedAt: null,
             </datalist>
           </div>
 
-         {/* ================= MEMBERSHIP ================= */}
-<div className="formSection">
-  <h3>Membership Plan</h3>
-
-  <div className="membershipSelect">
-    <div className="membershipOption active">
-      <strong>Coach Membership</strong>
-      <span>€99 / year</span>
-      <p>
-        Apply for jobs, view salary ranges, get visibility to academies
-      </p>
-    </div>
-  </div>
-
-  <small style={{ opacity: 0.7 }}>
-    Membership will be activated after payment
-  </small>
-</div>
-
-
-          {/* ================= RECOMMENDATION ================= */}
           <div className="formSection">
             <h3>Letter of Recommendation</h3>
 
@@ -538,14 +558,29 @@ membershipStartedAt: null,
             />
           </div>
 
-     <Button
-  className="primaryBtn full"
-  type="submit"
-  disabled={loading}
->
-  {loading ? "Creating..." : "Create Profile"}
-</Button>
+          <label className="termsCheck">
+            <input
+              type="checkbox"
+              name="acceptedTerms"
+              checked={form.acceptedTerms}
+              onChange={handleChange}
+              required
+            />
+            <span>
+              I agree to{" "}
+              <a href="/terms" target="_blank" rel="noreferrer">
+                Terms
+              </a>{" "}
+              and{" "}
+              <a href="/privacy" target="_blank" rel="noreferrer">
+                Privacy Policy
+              </a>
+            </span>
+          </label>
 
+          <Button className="primaryBtn full" type="submit" disabled={loading}>
+            {loading ? "Sending request..." : "Create Profile"}
+          </Button>
         </form>
 
         <div className="authFooter">
@@ -554,5 +589,4 @@ membershipStartedAt: null,
       </div>
     </div>
   );
-
 }

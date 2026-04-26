@@ -1,411 +1,409 @@
 import "./CoachProfile.css";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../firebase";
 import {
   getStorage,
   ref,
- 
   uploadBytes,
   getDownloadURL,
-  deleteObject
+  deleteObject,
 } from "firebase/storage";
-
-import {useNavigate } from "react-router-dom";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { signOut } from "firebase/auth";
-
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 
 export default function CoachProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-const auth = getAuth();
-const [showLogoutModal, setShowLogoutModal] = useState(false);
-async function handleLogout() {
+  const auth = getAuth();
 
-
-  await signOut(auth);
-  navigate("/", { replace: true });
-}
-
-
-const [checkingAuth, setCheckingAuth] = useState(true);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   const [coach, setCoach] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState(null);
-const [newProfileImage, setNewProfileImage] = useState(null);
-const [newGalleryImages, setNewGalleryImages] = useState([]);
-const [authUser, setAuthUser] = useState(undefined);
-const [deletedGalleryImages, setDeletedGalleryImages] = useState([]);
-const GALLERY_MAX = 2;
 
-useEffect(() => {
-  if (!showLogoutModal) return;
+  const [newProfileImage, setNewProfileImage] = useState(null);
+  const [newGalleryImages, setNewGalleryImages] = useState([]);
+  const [authUser, setAuthUser] = useState(undefined);
+  const [deletedGalleryImages, setDeletedGalleryImages] = useState([]);
 
-  const onKeyDown = (e) => {
-    if (e.key === "Escape") setShowLogoutModal(false);
-  };
+  const GALLERY_MAX = 2;
 
-  window.addEventListener("keydown", onKeyDown);
-  return () => window.removeEventListener("keydown", onKeyDown);
-}, [showLogoutModal]);
+  const isOwner = authUser?.uid === id && authUser?.role === "coach";
 
+  useEffect(() => {
+    if (!showLogoutModal) return;
 
-useEffect(() => {
-  const auth = getAuth();
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setShowLogoutModal(false);
+    };
 
-  const unsub = onAuthStateChanged(auth, async (user) => {
-    // ❌ Guest – nema pristup
-    if (!user) {
-      navigate("/login", { replace: true });
-      return;
-    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showLogoutModal]);
 
-    // ✅ Ulogovan – proveri role
-    const snap = await getDoc(doc(db, "users", user.uid));
-    if (!snap.exists()) {
-      navigate("/login", { replace: true });
-      return;
-    }
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        navigate("/login", { replace: true });
+        return;
+      }
 
-    const role = snap.data().role;
+      const snap = await getDoc(doc(db, "users", user.uid));
 
-    // ❌ bilo ko osim academy ili coach
-    if (role !== "academy" && role !== "coach") {
-      navigate("/login", { replace: true });
-      return;
-    }
+      if (!snap.exists()) {
+        navigate("/login", { replace: true });
+        return;
+      }
 
-    setAuthUser({ ...user, role });
-    setCheckingAuth(false);
-  });
+      const role = snap.data().role;
 
-  return () => unsub();
-}, [navigate]);
+      if (role !== "academy" && role !== "coach") {
+        navigate("/login", { replace: true });
+        return;
+      }
 
+      setAuthUser({ ...user, role });
+      setCheckingAuth(false);
+    });
 
-
-
-const isOwner = authUser?.uid === id && authUser?.role === "coach";
-
+    return () => unsub();
+  }, [auth, navigate]);
 
   useEffect(() => {
     async function fetchCoach() {
       const snap = await getDoc(doc(db, "coaches", id));
+
       if (snap.exists()) {
         setCoach(snap.data());
         setFormData(snap.data());
       }
     }
+
     fetchCoach();
   }, [id]);
+
+  useEffect(() => {
+    if (!isOwner && editMode) setEditMode(false);
+  }, [isOwner, editMode]);
+
+  async function handleLogout() {
+    await signOut(auth);
+    navigate("/", { replace: true });
+  }
 
   function handleChange(e) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
- async function handleSave() {
-  const storage = getStorage();
-  let updatedData = { ...formData };
+  function formatProfileDate(value) {
+    if (!value) return "Not set";
 
-  // 🟡 Ako briše sliku
-  if (formData.profileImage === "" && coach.profileImage) {
-    const oldRef = ref(storage, `coachProfiles/${id}/profile`);
+    const date = value?.toDate
+      ? value.toDate()
+      : value?.seconds
+      ? new Date(value.seconds * 1000)
+      : new Date(value);
 
-    await deleteObject(oldRef);
-    updatedData.profileImage = "";
+    if (Number.isNaN(date.getTime())) return "Not set";
+
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   }
 
-  // 🟢 Ako uploaduje novu sliku
-  if (newProfileImage) {
-    const imgRef = ref(storage, `coachProfiles/${id}/profile`);
-    await uploadBytes(imgRef, newProfileImage);
-    const url = await getDownloadURL(imgRef);
-    updatedData.profileImage = url;
+  function isProfileActive(value) {
+    if (!value) return false;
+
+    const date = value?.toDate
+      ? value.toDate()
+      : value?.seconds
+      ? new Date(value.seconds * 1000)
+      : new Date(value);
+
+    if (Number.isNaN(date.getTime())) return false;
+
+    return date > new Date();
   }
-// 🟢 Upload novih gallery slika
-if (newGalleryImages.length > 0) {
-  // 🟢 EXISTING gallery images (after deletions)
-const existingGallery = formData.galleryImages || [];
 
-// 🟢 NEW images upload
-const uploadedNewImages = [];
-
-for (let i = 0; i < newGalleryImages.length; i++) {
-  const img = newGalleryImages[i];
-  const imgRef = ref(
-    storage,
-    `coachProfiles/${id}/gallery_${Date.now()}_${i}`
-  );
-
-  await uploadBytes(imgRef, img);
-  const url = await getDownloadURL(imgRef);
-  uploadedNewImages.push(url);
-}
-
-// 🟢 FINAL gallery = old + new
-updatedData.galleryImages = [
-  ...existingGallery,
-  ...uploadedNewImages,
-];
-
-}
-
-  await updateDoc(doc(db, "coaches", id), updatedData);
-
-  if (deletedGalleryImages.length > 0) {
+  async function requestExtension() {
     try {
-      await Promise.all(
-        deletedGalleryImages.map((imgUrl) =>
-      deleteObject(ref(storage, imgUrl))
+      await updateDoc(doc(db, "coaches", id), {
+        extensionRequested: true,
+        extensionRequestedAt: serverTimestamp(),
+      });
 
+      setCoach((prev) => ({
+        ...prev,
+        extensionRequested: true,
+      }));
 
-        )
-      );
-    } catch (deleteError) {
-      console.error("Gallery cleanup error:", deleteError);
+      setFormData((prev) => ({
+        ...prev,
+        extensionRequested: true,
+      }));
+
+      alert("Extension request sent.");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to send extension request.");
     }
   }
 
-  setCoach(updatedData);
-  setFormData(updatedData);
-  setEditMode(false);
-  setNewProfileImage(null);
-  setNewGalleryImages([]);
-  setDeletedGalleryImages([]);
+  async function handleSave() {
+    const storage = getStorage();
+    let updatedData = { ...formData };
 
-}
+    if (formData.profileImage === "" && coach.profileImage) {
+      const oldRef = ref(storage, `coachProfiles/${id}/profile`);
+      await deleteObject(oldRef);
+      updatedData.profileImage = "";
+    }
 
+    if (newProfileImage) {
+      const imgRef = ref(storage, `coachProfiles/${id}/profile`);
+      await uploadBytes(imgRef, newProfileImage);
+      const url = await getDownloadURL(imgRef);
+      updatedData.profileImage = url;
+    }
 
-function handleCancel() {
-  setFormData(coach);
-  setNewProfileImage(null);
-  setNewGalleryImages([]);
-  setDeletedGalleryImages([]);
-  setEditMode(false);
-}
+    if (newGalleryImages.length > 0) {
+      const existingGallery = formData.galleryImages || [];
+      const uploadedNewImages = [];
 
+      for (let i = 0; i < newGalleryImages.length; i++) {
+        const img = newGalleryImages[i];
+        const imgRef = ref(storage, `coachProfiles/${id}/gallery_${Date.now()}_${i}`);
 
+        await uploadBytes(imgRef, img);
+        const url = await getDownloadURL(imgRef);
+        uploadedNewImages.push(url);
+      }
 
-function removeGalleryImage(imgUrl) {
-  const updatedImages = (formData.galleryImages || []).filter(
-    (img) => img !== imgUrl
-  );
+      updatedData.galleryImages = [...existingGallery, ...uploadedNewImages];
+    }
 
-  setFormData((prev) => ({
-    ...prev,
-    galleryImages: updatedImages,
-  }));
+    await updateDoc(doc(db, "coaches", id), updatedData);
 
-  setDeletedGalleryImages((prev) => [...prev, imgUrl]);
-}
+    if (deletedGalleryImages.length > 0) {
+      try {
+        await Promise.all(
+          deletedGalleryImages.map((imgUrl) => deleteObject(ref(storage, imgUrl)))
+        );
+      } catch (deleteError) {
+        console.error("Gallery cleanup error:", deleteError);
+      }
+    }
+
+    setCoach(updatedData);
+    setFormData(updatedData);
+    setEditMode(false);
+    setNewProfileImage(null);
+    setNewGalleryImages([]);
+    setDeletedGalleryImages([]);
+  }
+
+  function handleCancel() {
+    setFormData(coach);
+    setNewProfileImage(null);
+    setNewGalleryImages([]);
+    setDeletedGalleryImages([]);
+    setEditMode(false);
+  }
+
+  function removeGalleryImage(imgUrl) {
+    const updatedImages = (formData.galleryImages || []).filter(
+      (img) => img !== imgUrl
+    );
+
+    setFormData((prev) => ({
+      ...prev,
+      galleryImages: updatedImages,
+    }));
+
+    setDeletedGalleryImages((prev) => [...prev, imgUrl]);
+  }
+
+  function removeNewGalleryImage(index) {
+    setNewGalleryImages((prev) => prev.filter((_, i) => i !== index));
+  }
 
   function getYoutubeThumbnail(url) {
     if (!url) return null;
+
     const match = url.match(/(?:youtube\.com\/.*v=|youtu\.be\/)([^&]+)/);
-    return match
-      ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`
-      : null;
+
+    return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
   }
-function removeNewGalleryImage(index) {
-  setNewGalleryImages(prev =>
-    prev.filter((_, i) => i !== index)
-  );
-}
-const existingCount = formData?.galleryImages?.length || 0;
-const newCount = newGalleryImages.length;
-const remainingSlots = GALLERY_MAX - existingCount - newCount;
 
+  const existingCount = formData?.galleryImages?.length || 0;
+  const newCount = newGalleryImages.length;
+  const remainingSlots = GALLERY_MAX - existingCount - newCount;
 
-useEffect(() => {
-  if (!isOwner && editMode) setEditMode(false);
-}, [isOwner, editMode]);
+  if (checkingAuth) {
+    return (
+      <div className="loader">
+        <p>Checking access...</p>
+      </div>
+    );
+  }
 
-
-
-// ⏳ čekamo auth + role
-if (checkingAuth) {
-  return (
-    <div className="loader">
-      <p>Checking access...</p>
-    </div>
-  );
-}
-
-if (!coach) {
-  return (
-    <div className="loader">
-      <p>Loading profile...</p>
-    </div>
-  );
-}
+  if (!coach) {
+    return (
+      <div className="loader">
+        <p>Loading profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div
       className="coachProfilePage"
       style={{ backgroundImage: "url(/images/tennis-bg.webp)" }}
     >
-      {/* ================= HERO ================= */}
       <div className="coachHero">
         <div className="coachHeroContent">
           <div className="coachInfoRow">
-            {/* PROFILE IMAGE */}
+            <div className="coachAvatarWrap">
+              <img
+                src={
+                  newProfileImage
+                    ? URL.createObjectURL(newProfileImage)
+                    : coach.profileImage || "/images/avatar-placeholder.png"
+                }
+                alt={coach.fullName}
+                className="coachAvatar"
+              />
 
-<div className="coachAvatarWrap">
-  <img
-    src={
-      newProfileImage
-        ? URL.createObjectURL(newProfileImage)
-        : coach.profileImage || "/images/avatar-placeholder.png"
-    }
-    alt={coach.fullName}
-    className="coachAvatar"
-  />
+              {editMode && (
+                <div className="avatarActions">
+                  <label className="uploadBtn">
+                    Change photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => setNewProfileImage(e.target.files[0])}
+                    />
+                  </label>
 
-  {editMode && (
-    <div className="avatarActions">
-      <label className="uploadBtn">
-        Change photo
-        <input
-          type="file"
-          accept="image/*"
-          hidden
-          onChange={(e) => setNewProfileImage(e.target.files[0])}
-        />
-      </label>
+                  {formData.profileImage && (
+                    <button
+                      className="removeBtn"
+                      onClick={() =>
+                        setFormData((prev) => ({ ...prev, profileImage: "" }))
+                      }
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
 
-      {formData.profileImage && (
-        <button
-          className="removeBtn"
-          onClick={() =>
-            setFormData((prev) => ({ ...prev, profileImage: "" }))
-          }
-        >
-          Remove
-        </button>
-      )}
-    </div>
-  )}
-</div>
-
-
-            {/* INFO */}
             <div className="coachInfo">
               {editMode ? (
                 <>
-  <input
-    className="inputHero"
-    name="fullName"
-    value={formData.fullName}
-    onChange={handleChange}
-  />
+                  <input
+                    className="inputHero"
+                    name="fullName"
+                    value={formData.fullName || ""}
+                    onChange={handleChange}
+                  />
 
-  <div className="heroRow">
-    <input
-      className="inputHero small"
-      name="nationality"
-      value={formData.nationality}
-      onChange={handleChange}
-      placeholder="Nationality"
-    />
-    <input
-      className="inputHero small"
-      name="residence"
-      value={formData.residence}
-      onChange={handleChange}
-      placeholder="Residence"
-    />
-    <input
-      className="inputHero small"
-      name="age"
-      value={formData.age}
-      onChange={handleChange}
-      placeholder="Age"
-    />
-  </div>
+                  <div className="heroRow">
+                    <input
+                      className="inputHero small"
+                      name="nationality"
+                      value={formData.nationality || ""}
+                      onChange={handleChange}
+                      placeholder="Nationality"
+                    />
+                    <input
+                      className="inputHero small"
+                      name="residence"
+                      value={formData.residence || ""}
+                      onChange={handleChange}
+                      placeholder="Residence"
+                    />
+                    <input
+                      className="inputHero small"
+                      name="age"
+                      value={formData.age || ""}
+                      onChange={handleChange}
+                      placeholder="Age"
+                    />
+                  </div>
 
-  <input
-    className="inputHero small"
-    name="region"
-    value={formData.region || ""}
-    onChange={handleChange}
-    placeholder="Region"
-  />
-</>
-
+                  <input
+                    className="inputHero small"
+                    name="region"
+                    value={formData.region || ""}
+                    onChange={handleChange}
+                    placeholder="Region"
+                  />
+                </>
               ) : (
                 <>
                   <h1>{coach.fullName}</h1>
 
-<p>
-  {coach.nationality} - {coach.residence} - {coach.age} years
-</p>
+                  <p>
+                    {coach.nationality} - {coach.residence} - {coach.age} years
+                  </p>
 
-<p className="regionLine">
-  <strong>Region:</strong> {coach.region || "-"}
-</p>
-
+                  <p className="regionLine">
+                    <strong>Region:</strong> {coach.region || "-"}
+                  </p>
                 </>
               )}
 
+              {isOwner && !editMode && (
+                <div className="heroActions">
+                  <button className="primaryBtn" onClick={() => navigate("/jobs")}>
+                    View Available Jobs
+                  </button>
 
+                  <button
+                    className="secondaryBtn editBtn"
+                    onClick={() => setEditMode(true)}
+                  >
+                    Edit Profile
+                  </button>
 
-              {/* EDIT CONTROLS */}
-{isOwner && !editMode && (
-  <div className="heroActions">
-    <button
-      className="primaryBtn"
-      onClick={() => navigate("/jobs")}
-    >
-      View Available Jobs
-    </button>
+                  <button
+                    className="logoutBtn"
+                    onClick={() => setShowLogoutModal(true)}
+                  >
+                    Log out
+                  </button>
+                </div>
+              )}
 
-    <button
-      className="secondaryBtn editBtn"
-      onClick={() => setEditMode(true)}
-    >
-      Edit Profile
-    </button>
-
-    <button
-      className="logoutBtn"
-      onClick={() => setShowLogoutModal(true)}
-    >
-      Log out
-    </button>
-  </div>
-)}
-
-
-
-
-{isOwner && editMode && (
-  <div className="editActions">
-    <button className="primaryBtn" onClick={handleSave}>
-      Save
-    </button>
-    <button className="secondaryBtn" onClick={handleCancel}>
-      Cancel
-    </button>
-  </div>
-)}
-
-
-
+              {isOwner && editMode && (
+                <div className="editActions">
+                  <button className="primaryBtn" onClick={handleSave}>
+                    Save
+                  </button>
+                  <button className="secondaryBtn" onClick={handleCancel}>
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ================= CONTENT ================= */}
       <div className="coachContent">
-        {/* LEFT COLUMN */}
         <div className="leftColumn">
           <div className="card">
             <h3>Profile Information</h3>
+
             {editMode ? (
               <textarea
                 className="textarea"
@@ -418,85 +416,97 @@ if (!coach) {
             )}
           </div>
 
-          {/* EXPERIENCE = GALLERY IMAGES */}
           <div className="card">
             <h3>Coaching Experience</h3>
-        <div className="experienceGrid">
-  {(editMode ? formData.galleryImages : coach.galleryImages)?.map(
-    (img, i) => (
-      <div
-        key={i}
-        className="experienceItem"
-        style={{ backgroundImage: `url(${img})` }}
-      >
-        {editMode && (
-          <button
-            className="removeExperienceBtn"
-            onClick={() => removeGalleryImage(img)}
-          >
-            x
-          </button>
-        )}
-      </div>
-    )
-  )}
-{editMode &&
-  newGalleryImages.map((img, i) => (
-    <div
-      key={`new-${i}`}
-      className="experienceItem"
-      style={{ backgroundImage: `url(${URL.createObjectURL(img)})` }}
-    >
-      <button
-        className="removeExperienceBtn"
-        onClick={() => removeNewGalleryImage(i)}
-      >
-        x
-      </button>
-    </div>
-  ))}
 
+            <div className="experienceGrid">
+              {(editMode ? formData.galleryImages : coach.galleryImages)?.map(
+                (img, i) => (
+                  <div
+                    key={i}
+                    className="experienceItem"
+                    style={{ backgroundImage: `url(${img})` }}
+                  >
+                    {editMode && (
+                      <button
+                        className="removeExperienceBtn"
+                        onClick={() => removeGalleryImage(img)}
+                      >
+                        x
+                      </button>
+                    )}
+                  </div>
+                )
+              )}
 
-</div>
+              {editMode &&
+                newGalleryImages.map((img, i) => (
+                  <div
+                    key={`new-${i}`}
+                    className="experienceItem"
+                    style={{ backgroundImage: `url(${URL.createObjectURL(img)})` }}
+                  >
+                    <button
+                      className="removeExperienceBtn"
+                      onClick={() => removeNewGalleryImage(i)}
+                    >
+                      x
+                    </button>
+                  </div>
+                ))}
+            </div>
 
-{editMode && remainingSlots > 0 && (
-
-  <label className="uploadExperienceBtn">
-    Add experience photos
-    <input
-      type="file"
-      accept="image/*"
-      multiple
-      hidden
-onChange={(e) => {
-  setNewGalleryImages(prev => {
-    const incoming = Array.from(e.target.files);
-    const allowed = incoming.slice(0, remainingSlots);
-    return [...prev, ...allowed];
-  });
-  e.target.value = "";
-}}
-
-
-
-    />
-  </label>
-)}
-
-
+            {editMode && remainingSlots > 0 && (
+              <label className="uploadExperienceBtn">
+                Add experience photos
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  hidden
+                  onChange={(e) => {
+                    setNewGalleryImages((prev) => {
+                      const incoming = Array.from(e.target.files);
+                      const allowed = incoming.slice(0, remainingSlots);
+                      return [...prev, ...allowed];
+                    });
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
           </div>
 
           <div className="card membershipCard">
-            <h3>Membership</h3>
-            <p>Pro Membership</p>
-            <button>Extend Membership</button>
+            <h3>Profile validity</h3>
+
+            <p>
+              <strong>Valid until:</strong> {formatProfileDate(coach.expiresAt)}
+            </p>
+
+            <p>
+              <strong>Status:</strong>{" "}
+              {isProfileActive(coach.expiresAt) ? "Active" : "Expired"}
+            </p>
+
+            {isOwner && (
+              <button
+                className="primaryBtn"
+                onClick={requestExtension}
+                disabled={coach.extensionRequested}
+              >
+                {coach.extensionRequested
+                  ? "Extension requested"
+                  : "Request extension"}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* RIGHT COLUMN */}
         <div className="rightColumn">
           <div className="card">
             <h4>Certifications</h4>
+
             {editMode ? (
               <textarea
                 className="textarea"
@@ -509,15 +519,14 @@ onChange={(e) => {
               <ul>
                 {coach.certifications
                   ?.split(",")
-                  .map((c, i) => (
-                    <li key={i}>{c.trim()}</li>
-                  ))}
+                  .map((c, i) => <li key={i}>{c.trim()}</li>)}
               </ul>
             )}
           </div>
 
           <div className="card">
             <h4>Video Links</h4>
+
             {editMode ? (
               <>
                 <input
@@ -570,6 +579,7 @@ onChange={(e) => {
 
           <div className="card">
             <h4>Recommendation</h4>
+
             {editMode ? (
               <>
                 <input
@@ -597,51 +607,28 @@ onChange={(e) => {
           </div>
         </div>
       </div>
+
       {showLogoutModal && (
-  <div
-    className="modalOverlay"
-    onClick={() => setShowLogoutModal(false)}
-  >
-    <div
-      className="logoutModal"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <h3>Sign out?</h3>
-      <p>You will be signed out of your account.</p>
+        <div className="modalOverlay" onClick={() => setShowLogoutModal(false)}>
+          <div className="logoutModal" onClick={(e) => e.stopPropagation()}>
+            <h3>Sign out?</h3>
+            <p>You will be signed out of your account.</p>
 
-      <div className="logoutActions">
-        <button
-          className="secondaryBtn"
-          onClick={() => setShowLogoutModal(false)}
-        >
-          Cancel
-        </button>
+            <div className="logoutActions">
+              <button
+                className="secondaryBtn"
+                onClick={() => setShowLogoutModal(false)}
+              >
+                Cancel
+              </button>
 
-        <button
-          className="dangerBtn"
-          onClick={handleLogout}
-        >
-          Log out
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
+              <button className="dangerBtn" onClick={handleLogout}>
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

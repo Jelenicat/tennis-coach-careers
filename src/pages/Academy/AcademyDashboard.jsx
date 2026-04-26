@@ -26,35 +26,34 @@ export default function AcademyDashboard() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  /* JOBS */
   const [jobs, setJobs] = useState([]);
   const [showJobForm, setShowJobForm] = useState(false);
   const [editingJob, setEditingJob] = useState(null);
-const REGIONS = [
-  "Europe",
-  "North America",
-  "South America",
-  "Asia",
-  "Africa",
-  "Australia / Oceania",
-  "Middle East",
-];
 
-const emptyJobForm = useMemo(
-  () => ({
-    title: "",
-    minSalary: "",
-    maxSalary: "",
-    benefits: "",
-    description: "",
-    date: "",
-    country: "",
-    city: "",
-    address: "",
-  }),
-  []
-);
+  const REGIONS = [
+    "Europe",
+    "North America",
+    "South America",
+    "Asia",
+    "Africa",
+    "Australia / Oceania",
+    "Middle East",
+  ];
 
+  const emptyJobForm = useMemo(
+    () => ({
+      title: "",
+      minSalary: "",
+      maxSalary: "",
+      benefits: "",
+      description: "",
+      date: "",
+      country: "",
+      city: "",
+      address: "",
+    }),
+    []
+  );
 
   const [jobForm, setJobForm] = useState(emptyJobForm);
 
@@ -77,7 +76,61 @@ const emptyJobForm = useMemo(
     setJobForm((p) => ({ ...p, [name]: value }));
   }, []);
 
-  /* ================= HANDLERS (MORAJU BITI PRE RETURN-A) ================= */
+  function formatProfileDate(value) {
+    if (!value) return "Not set";
+
+    const date = value?.toDate
+      ? value.toDate()
+      : value?.seconds
+      ? new Date(value.seconds * 1000)
+      : new Date(value);
+
+    if (Number.isNaN(date.getTime())) return "Not set";
+
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  function isProfileActive(value) {
+    if (!value) return false;
+
+    const date = value?.toDate
+      ? value.toDate()
+      : value?.seconds
+      ? new Date(value.seconds * 1000)
+      : new Date(value);
+
+    if (Number.isNaN(date.getTime())) return false;
+
+    return date > new Date();
+  }
+
+  const requestExtension = useCallback(async () => {
+    try {
+      await updateDoc(doc(db, "academies", id), {
+        extensionRequested: true,
+        extensionRequestedAt: serverTimestamp(),
+      });
+
+      setAcademy((prev) => ({
+        ...prev,
+        extensionRequested: true,
+      }));
+
+      setFormData((prev) => ({
+        ...prev,
+        extensionRequested: true,
+      }));
+
+      alert("Extension request sent.");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to send extension request.");
+    }
+  }, [id]);
 
   const handleSaveProfile = useCallback(async () => {
     await updateDoc(doc(db, "academies", id), formData);
@@ -88,11 +141,10 @@ const emptyJobForm = useMemo(
   const saveJob = useCallback(async () => {
     if (editingJob) {
       await updateDoc(doc(db, "academies", id, "jobs", editingJob.id), jobForm);
+
       setJobs((prev) =>
         prev.map((job) =>
-          job.id === editingJob.id
-            ? { ...jobForm, id: editingJob.id }
-            : job
+          job.id === editingJob.id ? { ...jobForm, id: editingJob.id } : job
         )
       );
     } else {
@@ -122,8 +174,6 @@ const emptyJobForm = useMemo(
     [id]
   );
 
-  /* ================= EFFECTS ================= */
-
   useEffect(() => {
     if (!showLogoutModal) return;
 
@@ -143,6 +193,7 @@ const emptyJobForm = useMemo(
       }
 
       const snap = await getDoc(doc(db, "users", user.uid));
+
       if (!snap.exists() || snap.data().role !== "academy") {
         navigate("/login", { replace: true });
         return;
@@ -156,10 +207,12 @@ const emptyJobForm = useMemo(
 
   useEffect(() => {
     if (!id) return;
+
     let active = true;
 
     async function fetchAcademy() {
       const snap = await getDoc(doc(db, "academies", id));
+
       if (active && snap.exists()) {
         setAcademy(snap.data());
         setFormData(snap.data());
@@ -168,7 +221,9 @@ const emptyJobForm = useMemo(
 
     async function fetchJobs() {
       const snap = await getDocs(collection(db, "academies", id, "jobs"));
+
       if (!active) return;
+
       setJobs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     }
 
@@ -180,89 +235,90 @@ const emptyJobForm = useMemo(
     };
   }, [id]);
 
-  /* ================= EARLY RETURNS ================= */
-
   if (checkingAuth) {
-    return <div className="loader"><p>Checking access...</p></div>;
+    return (
+      <div className="loader">
+        <p>Checking access...</p>
+      </div>
+    );
   }
 
   if (!academy || !formData) {
-    return <div className="loader"><p>Loading academy profile...</p></div>;
+    return (
+      <div className="loader">
+        <p>Loading academy profile...</p>
+      </div>
+    );
   }
 
-  /* ================= RENDER ================= */
   return (
     <div className="coachProfilePage">
-      {/* HERO */}
       <div className="coachHero">
         <div className="coachHeroContent">
           <div className="coachInfo">
             {editMode ? (
-     <>
-  {/* ORGANISATION NAME */}
-<div className="heroField floating">
-  <input
-    className="inputHero"
-    name="organisationName"
-    value={formData.organisationName || ""}
-    onChange={handleChange}
-    placeholder=" "
-  />
-  <label>Organisation name</label>
-</div>
+              <>
+                <div className="heroField floating">
+                  <input
+                    className="inputHero"
+                    name="organisationName"
+                    value={formData.organisationName || ""}
+                    onChange={handleChange}
+                    placeholder=" "
+                  />
+                  <label>Organisation name</label>
+                </div>
 
-<div className="heroInputRow">
-  <div className="heroField floating">
-    <input
-      className="inputHero small"
-      name="city"
-      value={formData.city || ""}
-      onChange={handleChange}
-      placeholder=" "
-    />
-    <label>City</label>
-  </div>
+                <div className="heroInputRow">
+                  <div className="heroField floating">
+                    <input
+                      className="inputHero small"
+                      name="city"
+                      value={formData.city || ""}
+                      onChange={handleChange}
+                      placeholder=" "
+                    />
+                    <label>City</label>
+                  </div>
 
-<div className="heroField floating">
-  <input
-    className="inputHero small"
-    name="region"
-    value={formData.region || ""}
-    onChange={handleChange}
-    placeholder=" "
-    list="region-options"
-  />
-  <label>Region</label>
+                  <div className="heroField floating">
+                    <input
+                      className="inputHero small"
+                      name="region"
+                      value={formData.region || ""}
+                      onChange={handleChange}
+                      placeholder=" "
+                      list="region-options"
+                    />
+                    <label>Region</label>
 
-  <datalist id="region-options">
-    {REGIONS.map((r) => (
-      <option key={r} value={r} />
-    ))}
-  </datalist>
-</div>
+                    <datalist id="region-options">
+                      {REGIONS.map((r) => (
+                        <option key={r} value={r} />
+                      ))}
+                    </datalist>
+                  </div>
 
-
-  <div className="heroField floating">
-    <input
-      className="inputHero small"
-      name="address"
-      value={formData.address || ""}
-      onChange={handleChange}
-      placeholder=" "
-    />
-    <label>Address</label>
-  </div>
-</div>
-
-</>
-
-
+                  <div className="heroField floating">
+                    <input
+                      className="inputHero small"
+                      name="address"
+                      value={formData.address || ""}
+                      onChange={handleChange}
+                      placeholder=" "
+                    />
+                    <label>Address</label>
+                  </div>
+                </div>
+              </>
             ) : (
               <>
                 <h1>{academy.organisationName}</h1>
+
                 <p>
                   {academy.city} - {academy.region}
                 </p>
+
                 {academy.address && (
                   <p className="academyAddress">{academy.address}</p>
                 )}
@@ -290,6 +346,7 @@ const emptyJobForm = useMemo(
                 <button className="primaryBtn" onClick={handleSaveProfile}>
                   Save
                 </button>
+
                 <button
                   className="secondaryBtn"
                   onClick={() => {
@@ -305,7 +362,6 @@ const emptyJobForm = useMemo(
         </div>
       </div>
 
-      {/* CONTACT INFO */}
       {editMode && (
         <div className="editSection">
           <h3 className="sectionTitle">Contact Information</h3>
@@ -317,12 +373,14 @@ const emptyJobForm = useMemo(
               value={formData.contactName || ""}
               onChange={handleChange}
             />
+
             <input
               name="email"
               placeholder="Email"
               value={formData.email || ""}
               onChange={handleChange}
             />
+
             <input
               name="phone"
               placeholder="Contact number"
@@ -333,7 +391,6 @@ const emptyJobForm = useMemo(
         </div>
       )}
 
-      {/* ACTIONS */}
       {!editMode && (
         <div className="dashboardActions">
           <button
@@ -360,7 +417,31 @@ const emptyJobForm = useMemo(
         </div>
       )}
 
-      {/* JOB FORM */}
+      {!editMode && (
+        <div className="card membershipCard">
+          <h3>Profile validity</h3>
+
+          <p>
+            <strong>Valid until:</strong> {formatProfileDate(academy.expiresAt)}
+          </p>
+
+          <p>
+            <strong>Status:</strong>{" "}
+            {isProfileActive(academy.expiresAt) ? "Active" : "Expired"}
+          </p>
+
+          <button
+            className="primaryBtn"
+            onClick={requestExtension}
+            disabled={academy.extensionRequested}
+          >
+            {academy.extensionRequested
+              ? "Extension requested"
+              : "Request extension"}
+          </button>
+        </div>
+      )}
+
       {showJobForm && !showCoaches && (
         <div className="card">
           <h3>{editingJob ? "Edit Job" : "Add Job"}</h3>
@@ -371,6 +452,7 @@ const emptyJobForm = useMemo(
             name="title"
             onChange={handleJobChange}
           />
+
           <input
             placeholder="Country"
             value={jobForm.country}
@@ -392,23 +474,23 @@ const emptyJobForm = useMemo(
             onChange={handleJobChange}
           />
 
-       <div className="salaryRow">
-  <input
-    type="number"
-    placeholder="Min salary (€)"
-    name="minSalary"
-    value={jobForm.minSalary}
-    onChange={handleJobChange}
-  />
+          <div className="salaryRow">
+            <input
+              type="number"
+              placeholder="Min salary (€)"
+              name="minSalary"
+              value={jobForm.minSalary}
+              onChange={handleJobChange}
+            />
 
-  <input
-    type="number"
-    placeholder="Max salary (€)"
-    name="maxSalary"
-    value={jobForm.maxSalary}
-    onChange={handleJobChange}
-  />
-</div>
+            <input
+              type="number"
+              placeholder="Max salary (€)"
+              name="maxSalary"
+              value={jobForm.maxSalary}
+              onChange={handleJobChange}
+            />
+          </div>
 
           <input
             placeholder="Job benefits"
@@ -416,12 +498,14 @@ const emptyJobForm = useMemo(
             name="benefits"
             onChange={handleJobChange}
           />
+
           <textarea
             placeholder="Description"
             value={jobForm.description}
             name="description"
             onChange={handleJobChange}
           />
+
           <input
             type="date"
             value={jobForm.date}
@@ -433,6 +517,7 @@ const emptyJobForm = useMemo(
             <button className="primaryBtn" onClick={saveJob}>
               Save
             </button>
+
             <button
               className="secondaryBtn"
               onClick={() => setShowJobForm(false)}
@@ -443,31 +528,35 @@ const emptyJobForm = useMemo(
         </div>
       )}
 
-      {/* JOB LIST */}
       {!showCoaches && (
         <div className="jobsList">
           {jobs.map((job) => (
             <div key={job.id} className="card">
               <h4>{job.title}</h4>
-           <p>
-  <strong>Salary:</strong>{" "}
-  {job.minSalary && job.maxSalary
-    ? `€${job.minSalary} – €${job.maxSalary}`
-    : "Negotiable"}
-</p>
+
+              <p>
+                <strong>Salary:</strong>{" "}
+                {job.minSalary && job.maxSalary
+                  ? `€${job.minSalary} – €${job.maxSalary}`
+                  : "Negotiable"}
+              </p>
 
               <p>
                 <strong>Benefits:</strong> {job.benefits}
               </p>
+
               <p>
                 <strong>Description:</strong> {job.description}
               </p>
+
               <p>
                 <strong>Date:</strong> {job.date}
               </p>
+
               <p>
                 <strong>Location:</strong> {job.city}, {job.country}
               </p>
+
               <p>
                 <strong>Address:</strong> {job.address}
               </p>
@@ -483,6 +572,7 @@ const emptyJobForm = useMemo(
                 >
                   Edit
                 </button>
+
                 <button className="dangerBtn" onClick={() => deleteJob(job.id)}>
                   Delete
                 </button>
@@ -497,15 +587,13 @@ const emptyJobForm = useMemo(
           <CoachList onClose={() => setShowCoaches(false)} />
         </div>
       )}
+
       {showLogoutModal && (
         <div
           className="modalOverlay"
           onClick={() => setShowLogoutModal(false)}
         >
-          <div
-            className="logoutModal"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="logoutModal" onClick={(e) => e.stopPropagation()}>
             <h3>Sign out?</h3>
             <p>You will be signed out of your account.</p>
 

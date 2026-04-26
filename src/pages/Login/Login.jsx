@@ -50,15 +50,22 @@ export default function Login() {
       const userData = userSnap.data();
 
       // 3️⃣ Redirect na osnovu role
-      if (userData.role === "coach") {
-        navigate(`/coach/${userData.profileId}`);
-        return;
-      }
+    if (userData.role === "admin") {
+  navigate("/admin");
+  return;
+}
 
-      if (userData.role === "academy") {
-        navigate(`/academy/${userData.profileId}`);
-        return;
-      }
+if (userData.role === "coach") {
+  navigate(`/coach/${user.uid}`);
+  return;
+}
+
+if (userData.role === "academy") {
+  navigate(`/academy/${user.uid}`);
+  return;
+}
+
+throw new Error("Unknown user role.");
 
       throw new Error("Unknown user role.");
     } catch (err) {

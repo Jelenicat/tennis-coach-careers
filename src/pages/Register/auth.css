@@ -723,3 +723,33 @@ select:focus {
   opacity: 0.85;
 }
 
+.termsCheck {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 18px 0;
+  font-size: 13px;
+  color: #0b2a3d;
+  line-height: 1.4;
+}
+
+.termsCheck input {
+  width: auto;
+  margin-top: 2px;
+}
+
+.termsCheck a {
+  color: #0b2a3d;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+.pendingNotice {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(246, 222, 89, 0.28);
+  color: #0b2a3d;
+  font-size: 14px;
+  text-align: center;
+}
