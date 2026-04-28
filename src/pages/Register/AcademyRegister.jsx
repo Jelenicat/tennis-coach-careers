@@ -5,6 +5,8 @@ import "../Register/auth.css";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../firebase";
+import "react-phone-number-input/style.css";
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 
 const EMAIL_API_URL =
   "https://email-api-vert-beta.vercel.app/api/send-registration-request";
@@ -46,7 +48,10 @@ export default function AcademyRegister() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-
+if (!form.phone || !isValidPhoneNumber(form.phone)) {
+  alert("Please enter a valid phone number.");
+  return;
+}
     if (!form.acceptedTerms) {
       alert("Please accept Terms of Use and Privacy Policy.");
       return;
@@ -187,13 +192,23 @@ export default function AcademyRegister() {
               required
             />
 
-            <input
-              name="phone"
-              placeholder="Phone *"
-              value={form.phone}
-              onChange={handleChange}
-              required
-            />
+  <div className="phoneInputWrap">
+  <div className="phoneField">
+    <span className="phonePrefix">+381</span>
+
+    <PhoneInput
+      defaultCountry="RS"
+      placeholder="Phone number *"
+      value={form.phone}
+      onChange={(value) =>
+        setForm((prev) => ({
+          ...prev,
+          phone: value || "",
+        }))
+      }
+    />
+  </div>
+</div>
           </div>
 
           <div className="formSection">

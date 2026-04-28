@@ -145,28 +145,156 @@ useEffect(() => {
             Focused on careers.
           </p>
         </section>
+
+{/* MEMBERSHIP */}
+<section className="membership">
+  <div className="membershipHeader">
+    <span className="membershipEyebrow">Plans & Pricing</span>
+
+    <h2 className="membershipTitle">Membership Plans</h2>
+
+    <p className="membershipSubtitle">
+      Choose the plan that fits your journey.
+    </p>
+  </div>
+
+  <div className="membershipBlock">
+    <div className="membershipBlockHeader">
+      <span className="membershipLabel">Coach Memberships</span>
+      <h3>For tennis coaches looking for opportunities worldwide.</h3>
+    </div>
+
+    <div className="membershipSlider">
+      <div className="membershipPlanCard blue">
+        <div className="planTop">
+          <span>Standard</span>
+          <strong>50€</strong>
+          <small>per year*</small>
+        </div>
+
+        <ul>
+          <li>Public coach profile</li>
+          <li>5 job applications / month</li>
+          <li>CV advice</li>
+          <li>Video portfolio advice</li>
+        </ul>
+
+        <Button onClick={() => navigate("/choose-role")}>Get Started</Button>
+      </div>
+
+      <div className="membershipPlanCard blue diamond">
+        <div className="planBadge">Best Value</div>
+
+        <div className="planTop">
+          <span>Diamond</span>
+          <strong>220€</strong>
+          <small>per year*</small>
+        </div>
+
+        <ul>
+          <li>Public coach profile</li>
+          <li>Unlimited job applications</li>
+          <li>Negotiation guide</li>
+          <li>Professional CV creation</li>
+          <li>Video portfolio creation</li>
+          <li>Instagram promotion</li>
+        </ul>
+
+        <Button onClick={() => navigate("/choose-role")}>Get Started</Button>
+      </div>
+
+      <div className="membershipPlanCard blue">
+        <div className="planTop">
+          <span>Premium</span>
+          <strong>130€</strong>
+          <small>per year*</small>
+        </div>
+
+        <ul>
+          <li>Public coach profile</li>
+          <li>Unlimited job applications</li>
+          <li>Professional CV creation</li>
+          <li>Video portfolio advice</li>
+          <li>Negotiation guide</li>
+        </ul>
+
+        <Button onClick={() => navigate("/choose-role")}>Get Started</Button>
+      </div>
+    </div>
+  </div>
+
+  <div className="membershipBlock">
+    <div className="membershipBlockHeader">
+      <span className="membershipLabel yellowLabel">
+        Clubs / Agents / Academies
+      </span>
+      <h3>For organisations looking to hire tennis coaches.</h3>
+    </div>
+
+    <div className="membershipSlider twoPlans">
+      <div className="membershipPlanCard yellow">
+        <div className="planTop">
+          <span>Access</span>
+          <strong>Free</strong>
+          <small>paying per post*</small>
+        </div>
+
+        <ul>
+          <li>Paying per job post</li>
+          <li>Discount for 3 posts</li>
+          <li>Discount for 5 posts</li>
+        </ul>
+
+        <Button onClick={() => navigate("/choose-role")}>Get Started</Button>
+      </div>
+
+      <div className="membershipPlanCard yellow">
+        <div className="planTop">
+          <span>Member</span>
+          <strong>300€</strong>
+          <small>per year*</small>
+        </div>
+
+        <ul>
+          <li>Unlimited job posts</li>
+          <li>Access to database</li>
+          <li>Communication support</li>
+          <li>Instagram promotion</li>
+          <li>Ad creation support</li>
+        </ul>
+
+        <Button onClick={() => navigate("/choose-role")}>Get Started</Button>
+      </div>
+    </div>
+  </div>
+</section>
 {blogPosts.length > 0 && (
-  <section className="homeBlog">
-    <h2 className="homeBlogTitle">Latest Blog Posts</h2>
+  <section className="homeBlog compactBlog">
+    <div className="homeBlogHeader">
+      <span className="homeBlogEyebrow">From the blog</span>
+      <h2 className="homeBlogTitle">Latest posts</h2>
+      <p className="homeBlogSubtitle">
+        Short insights, updates and content for coaches and academies.
+      </p>
+    </div>
 
-    <div className="homeBlogGrid">
+    <div className="homeBlogGrid compactBlogGrid">
       {blogPosts.map((post) => (
-        <article className="homeBlogCard" key={post.id}>
-          {post.mediaType === "image" && post.mediaUrl && (
-            <img src={post.mediaUrl} alt={post.title} />
-          )}
-
-          {post.mediaType === "video" && post.mediaUrl && (
-            <video src={post.mediaUrl} controls />
-          )}
-
+        <article
+          className="homeBlogCard compactBlogCard"
+          key={post.id}
+          onClick={() => navigate(`/blog/${post.id}`)}
+        >
           <div className="homeBlogContent">
             <h3>{post.title}</h3>
             <p>{post.excerpt}</p>
 
             <button
               className="blogReadBtn"
-              onClick={() => navigate(`/blog/${post.id}`)}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/blog/${post.id}`);
+              }}
             >
               Read more
             </button>
@@ -176,58 +304,6 @@ useEffect(() => {
     </div>
   </section>
 )}
-        {/* MEMBERSHIP */}
-        <section className="membership">
-          <h2 className="membershipTitle">Membership Plans</h2>
-          <p className="membershipSubtitle">
-            Simple annual plans designed for coaches and academies.
-          </p>
-
-          <div className="membershipGrid">
-            <div className="membershipCard">
-              <h3>Coach Membership</h3>
-              <p className="membershipPrice">€99 / year</p>
-
-              <p className="membershipDesc">
-                Create a professional coaching profile, showcase your experience
-                and apply for coaching jobs worldwide.
-              </p>
-
-              <ul className="membershipFeatures">
-                <li>Public coach profile</li>
-                <li>Apply for jobs</li>
-                <li>Video & gallery showcase</li>
-              </ul>
-
-              <Button onClick={() => navigate("/choose-role")}>
-                Get Started
-              </Button>
-            </div>
-
-            <div className="membershipCard highlight featured">
-              <div className="featuredBadge">Most Popular</div>
-
-              <h3>Academy Membership</h3>
-              <p className="membershipPrice">€199 / year</p>
-
-              <p className="membershipDesc">
-                Post job openings, connect with qualified coaches and grow your
-                academy globally.
-              </p>
-
-              <ul className="membershipFeatures">
-                <li>Post job listings</li>
-                <li>Access coach database</li>
-                <li>Direct coach contact</li>
-              </ul>
-
-              <Button onClick={() => navigate("/choose-role")}>
-                Post a Job
-              </Button>
-            </div>
-          </div>
-        </section>
-
         {/* TESTIMONIALS */}
         <section className="testimonials">
           <h2 className="testimonialsTitle">What Coaches Say</h2>

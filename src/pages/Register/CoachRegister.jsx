@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import "./auth.css";
+import "react-phone-number-input/style.css";
+
 import Button from "../../components/ui/Button";
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import { createUserWithEmailAndPassword, deleteUser, signOut } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
@@ -13,40 +16,193 @@ const EMAIL_API_URL =
 const GALLERY_MAX = 2;
 
 const countries = [
-  "Serbia",
-  "Croatia",
-  "Bosnia and Herzegovina",
-  "Montenegro",
-  "Slovenia",
-  "North Macedonia",
-  "Italy",
-  "Spain",
-  "France",
-  "Germany",
-  "Austria",
-  "Switzerland",
-  "United Kingdom",
-  "Ireland",
-  "Netherlands",
-  "Belgium",
-  "Portugal",
-  "Greece",
-  "Turkey",
-  "United States",
-  "Canada",
-  "Mexico",
-  "Brazil",
+  "Afghanistan",
+  "Albania",
+  "Algeria",
+  "Andorra",
+  "Angola",
+  "Antigua and Barbuda",
   "Argentina",
-  "Chile",
+  "Armenia",
   "Australia",
-  "New Zealand",
-  "Japan",
+  "Austria",
+  "Azerbaijan",
+  "Bahamas",
+  "Bahrain",
+  "Bangladesh",
+  "Barbados",
+  "Belarus",
+  "Belgium",
+  "Belize",
+  "Benin",
+  "Bhutan",
+  "Bolivia",
+  "Bosnia and Herzegovina",
+  "Botswana",
+  "Brazil",
+  "Brunei",
+  "Bulgaria",
+  "Burkina Faso",
+  "Burundi",
+  "Cambodia",
+  "Cameroon",
+  "Canada",
+  "Chad",
+  "Chile",
   "China",
-  "South Korea",
-  "India",
-  "South Africa",
+  "Colombia",
+  "Comoros",
+  "Congo",
+  "Costa Rica",
+  "Croatia",
+  "Cuba",
+  "Cyprus",
+  "Czech Republic",
+  "Denmark",
+  "Djibouti",
+  "Dominica",
+  "Dominican Republic",
+  "Ecuador",
   "Egypt",
+  "El Salvador",
+  "Eritrea",
+  "Estonia",
+  "Eswatini",
+  "Ethiopia",
+  "Fiji",
+  "Finland",
+  "France",
+  "Gabon",
+  "Gambia",
+  "Georgia",
+  "Germany",
+  "Ghana",
+  "Greece",
+  "Grenada",
+  "Guatemala",
+  "Guinea",
+  "Guinea-Bissau",
+  "Guyana",
+  "Haiti",
+  "Honduras",
+  "Hungary",
+  "Iceland",
+  "India",
+  "Indonesia",
+  "Iran",
+  "Iraq",
+  "Ireland",
+  "Israel",
+  "Italy",
+  "Jamaica",
+  "Japan",
+  "Jordan",
+  "Kazakhstan",
+  "Kenya",
+  "Kiribati",
+  "Kuwait",
+  "Kyrgyzstan",
+  "Laos",
+  "Latvia",
+  "Lebanon",
+  "Lesotho",
+  "Liberia",
+  "Libya",
+  "Liechtenstein",
+  "Lithuania",
+  "Luxembourg",
+  "Madagascar",
+  "Malawi",
+  "Malaysia",
+  "Maldives",
+  "Mali",
+  "Malta",
+  "Marshall Islands",
+  "Mauritania",
+  "Mauritius",
+  "Mexico",
+  "Micronesia",
+  "Moldova",
+  "Monaco",
+  "Mongolia",
+  "Montenegro",
   "Morocco",
+  "Mozambique",
+  "Myanmar",
+  "Namibia",
+  "Nauru",
+  "Nepal",
+  "Netherlands",
+  "New Zealand",
+  "Nicaragua",
+  "Niger",
+  "Nigeria",
+  "North Korea",
+  "North Macedonia",
+  "Norway",
+  "Oman",
+  "Pakistan",
+  "Palau",
+  "Panama",
+  "Papua New Guinea",
+  "Paraguay",
+  "Peru",
+  "Philippines",
+  "Poland",
+  "Portugal",
+  "Qatar",
+  "Romania",
+  "Russia",
+  "Rwanda",
+  "Saint Kitts and Nevis",
+  "Saint Lucia",
+  "Saint Vincent and the Grenadines",
+  "Samoa",
+  "San Marino",
+  "Sao Tome and Principe",
+  "Saudi Arabia",
+  "Senegal",
+  "Serbia",
+  "Seychelles",
+  "Sierra Leone",
+  "Singapore",
+  "Slovakia",
+  "Slovenia",
+  "Solomon Islands",
+  "Somalia",
+  "South Africa",
+  "South Korea",
+  "Spain",
+  "Sri Lanka",
+  "Sudan",
+  "Suriname",
+  "Sweden",
+  "Switzerland",
+  "Syria",
+  "Tajikistan",
+  "Tanzania",
+  "Thailand",
+  "Togo",
+  "Tonga",
+  "Trinidad and Tobago",
+  "Tunisia",
+  "Turkey",
+  "Turkmenistan",
+  "Tuvalu",
+  "Uganda",
+  "Ukraine",
+  "United Arab Emirates",
+  "United Kingdom",
+  "United States",
+  "Uruguay",
+  "Uzbekistan",
+  "Vanuatu",
+  "Vatican City",
+  "Venezuela",
+  "Vietnam",
+  "Yemen",
+  "Zambia",
+  "Zimbabwe",
 ];
 
 const regions = [
@@ -56,24 +212,6 @@ const regions = [
   "Asia",
   "Africa",
   "Australia & Oceania",
-];
-
-const phoneCodes = [
-  { code: "+381", label: "🇷🇸 Serbia" },
-  { code: "+385", label: "🇭🇷 Croatia" },
-  { code: "+387", label: "🇧🇦 Bosnia and Herzegovina" },
-  { code: "+382", label: "🇲🇪 Montenegro" },
-  { code: "+386", label: "🇸🇮 Slovenia" },
-  { code: "+39", label: "🇮🇹 Italy" },
-  { code: "+34", label: "🇪🇸 Spain" },
-  { code: "+33", label: "🇫🇷 France" },
-  { code: "+49", label: "🇩🇪 Germany" },
-  { code: "+44", label: "🇬🇧 United Kingdom" },
-  { code: "+1", label: "🇺🇸 USA / 🇨🇦 Canada" },
-  { code: "+61", label: "🇦🇺 Australia" },
-  { code: "+81", label: "🇯🇵 Japan" },
-  { code: "+86", label: "🇨🇳 China" },
-  { code: "+91", label: "🇮🇳 India" },
 ];
 
 export default function CoachRegister() {
@@ -91,7 +229,6 @@ export default function CoachRegister() {
     age: "",
     nationality: "",
     residence: "",
-    phoneCode: "+381",
     phone: "",
     email: "",
     password: "",
@@ -159,6 +296,11 @@ export default function CoachRegister() {
       return;
     }
 
+    if (!form.phone || !isValidPhoneNumber(form.phone)) {
+      alert("Please enter a valid phone number.");
+      return;
+    }
+
     if (!form.acceptedTerms) {
       alert("Please accept Terms of Use and Privacy Policy.");
       return;
@@ -215,7 +357,7 @@ export default function CoachRegister() {
         age: form.age,
         nationality: form.nationality,
         residence: form.residence,
-        phone: `${form.phoneCode}${form.phone}`,
+        phone: form.phone,
         email: form.email,
         about: form.about,
         certifications: form.certifications,
@@ -245,7 +387,7 @@ export default function CoachRegister() {
         email: form.email,
         fullName: form.fullName,
         age: form.age,
-        phone: `${form.phoneCode}${form.phone}`,
+        phone: form.phone,
         nationality: form.nationality,
         residence: form.residence,
         region: form.region,
@@ -282,9 +424,7 @@ export default function CoachRegister() {
             className="authLogo"
           />
 
-          <h2 style={{ textAlign: "center" }}>
-            Request sent successfully
-          </h2>
+          <h2 style={{ textAlign: "center" }}>Request sent successfully</h2>
 
           <p className="pendingNotice">
             Your coach profile is under review. We will contact you soon.
@@ -358,27 +498,23 @@ export default function CoachRegister() {
               ))}
             </datalist>
 
-            <div className="twoCols">
-              <select
-                name="phoneCode"
-                value={form.phoneCode}
-                onChange={handleChange}
-              >
-                {phoneCodes.map((p) => (
-                  <option key={p.code} value={p.code}>
-                    {p.label} ({p.code})
-                  </option>
-                ))}
-              </select>
+         <div className="phoneInputWrap">
+  <div className="phoneField">
+    <span className="phonePrefix">+381</span>
 
-              <input
-                type="tel"
-                placeholder="Phone number"
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-              />
-            </div>
+    <PhoneInput
+      defaultCountry="RS"
+      placeholder="Phone number"
+      value={form.phone}
+      onChange={(value) =>
+        setForm((prev) => ({
+          ...prev,
+          phone: value || "",
+        }))
+      }
+    />
+  </div>
+</div>
 
             <input
               type="email"
@@ -479,6 +615,7 @@ export default function CoachRegister() {
                       className="galleryThumb"
                       alt="Gallery preview"
                     />
+
                     <button
                       type="button"
                       className="removeGalleryBtn"
@@ -566,6 +703,7 @@ export default function CoachRegister() {
               onChange={handleChange}
               required
             />
+
             <span>
               I agree to{" "}
               <a href="/terms" target="_blank" rel="noreferrer">
