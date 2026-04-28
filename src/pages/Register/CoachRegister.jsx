@@ -15,6 +15,27 @@ const EMAIL_API_URL =
 
 const GALLERY_MAX = 2;
 
+const coachMembershipPlans = [
+  {
+    id: "standard",
+    name: "Standard",
+    price: "50€ / year",
+    description: "Public profile, 5 job applications per month, CV advice and video portfolio advice.",
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    price: "130€ / year",
+    description: "Unlimited job applications, professional CV creation, video portfolio advice and negotiation guide.",
+  },
+  {
+    id: "diamond",
+    name: "Diamond",
+    price: "220€ / year",
+    description: "Full package with CV creation, video portfolio creation, negotiation guide and Instagram promotion.",
+  },
+];
+
 const countries = [
   "Afghanistan",
   "Albania",
@@ -239,6 +260,7 @@ export default function CoachRegister() {
     region: "",
     recommenderName: "",
     recommendationText: "",
+    membershipPlan: "",
     profileImage: null,
     acceptedTerms: false,
   });
@@ -301,6 +323,11 @@ export default function CoachRegister() {
       return;
     }
 
+    if (!form.membershipPlan) {
+      alert("Please choose a membership plan.");
+      return;
+    }
+
     if (!form.acceptedTerms) {
       alert("Please accept Terms of Use and Privacy Policy.");
       return;
@@ -324,12 +351,10 @@ export default function CoachRegister() {
         role: "coach",
         profileId: uid,
         email: form.email,
-
         approvalStatus: "pending",
         profileVisible: false,
         approvedAt: null,
         expiresAt: null,
-
         createdAt: serverTimestamp(),
       });
 
@@ -367,9 +392,11 @@ export default function CoachRegister() {
         recommenderName: form.recommenderName,
         recommendationText: form.recommendationText,
 
+        membershipPlan: form.membershipPlan,
+        membershipStatus: "pending",
+
         role: "coach",
         userId: uid,
-
         galleryImages: galleryUrls,
         profileImage: profileImageUrl,
 
@@ -377,7 +404,6 @@ export default function CoachRegister() {
         profileVisible: false,
         approvedAt: null,
         expiresAt: null,
-
         createdAt: serverTimestamp(),
       });
 
@@ -392,6 +418,7 @@ export default function CoachRegister() {
         residence: form.residence,
         region: form.region,
         certifications: form.certifications,
+        membershipPlan: form.membershipPlan,
       });
 
       await signOut(auth);
@@ -498,23 +525,23 @@ export default function CoachRegister() {
               ))}
             </datalist>
 
-         <div className="phoneInputWrap">
-  <div className="phoneField">
-    <span className="phonePrefix">+381</span>
+            <div className="phoneInputWrap">
+              <div className="phoneField">
+                <span className="phonePrefix">+381</span>
 
-    <PhoneInput
-      defaultCountry="RS"
-      placeholder="Phone number"
-      value={form.phone}
-      onChange={(value) =>
-        setForm((prev) => ({
-          ...prev,
-          phone: value || "",
-        }))
-      }
-    />
-  </div>
-</div>
+                <PhoneInput
+                  defaultCountry="RS"
+                  placeholder="Phone number"
+                  value={form.phone}
+                  onChange={(value) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      phone: value || "",
+                    }))
+                  }
+                />
+              </div>
+            </div>
 
             <input
               type="email"
@@ -693,6 +720,36 @@ export default function CoachRegister() {
               value={form.recommendationText}
               onChange={handleChange}
             />
+          </div>
+
+          <div className="formSection">
+            <h3>Membership Plan</h3>
+
+            <div className="membershipSelect">
+              {coachMembershipPlans.map((plan) => (
+                <label
+                  key={plan.id}
+                  className={`membershipOption ${
+                    form.membershipPlan === plan.id ? "active" : ""
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="membershipPlan"
+                    value={plan.id}
+                    checked={form.membershipPlan === plan.id}
+                    onChange={handleChange}
+                    required
+                  />
+
+                  <div>
+                    <strong>{plan.name}</strong>
+                    <span>{plan.price}</span>
+                    <p>{plan.description}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
           </div>
 
           <label className="termsCheck">

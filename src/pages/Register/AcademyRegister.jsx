@@ -11,6 +11,22 @@ import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 const EMAIL_API_URL =
   "https://email-api-vert-beta.vercel.app/api/send-registration-request";
 
+const academyMembershipPlans = [
+  {
+    id: "access",
+    name: "Access",
+    price: "Free",
+    description: "Paying per job post, with discounts for 3 or 5 posts.",
+  },
+  {
+    id: "member",
+    name: "Member",
+    price: "300€ / year",
+    description:
+      "Unlimited job posts, access to database, communication support and Instagram promotion.",
+  },
+];
+
 export default function AcademyRegister() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -24,6 +40,7 @@ export default function AcademyRegister() {
     address: "",
     city: "",
     region: "",
+    membershipPlan: "",
     acceptedTerms: false,
   });
 
@@ -48,10 +65,17 @@ export default function AcademyRegister() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-if (!form.phone || !isValidPhoneNumber(form.phone)) {
-  alert("Please enter a valid phone number.");
-  return;
-}
+
+    if (!form.phone || !isValidPhoneNumber(form.phone)) {
+      alert("Please enter a valid phone number.");
+      return;
+    }
+
+    if (!form.membershipPlan) {
+      alert("Please choose a membership plan.");
+      return;
+    }
+
     if (!form.acceptedTerms) {
       alert("Please accept Terms of Use and Privacy Policy.");
       return;
@@ -91,6 +115,9 @@ if (!form.phone || !isValidPhoneNumber(form.phone)) {
         city: form.city,
         region: form.region,
 
+        membershipPlan: form.membershipPlan,
+        membershipStatus: "pending",
+
         role: "academy",
 
         approvalStatus: "pending",
@@ -112,6 +139,7 @@ if (!form.phone || !isValidPhoneNumber(form.phone)) {
         address: form.address,
         city: form.city,
         region: form.region,
+        membershipPlan: form.membershipPlan,
       });
 
       setSuccess(true);
@@ -133,9 +161,7 @@ if (!form.phone || !isValidPhoneNumber(form.phone)) {
             className="authLogo"
           />
 
-          <h2 style={{ textAlign: "center" }}>
-            Request sent successfully
-          </h2>
+          <h2 style={{ textAlign: "center" }}>Request sent successfully</h2>
 
           <p className="pendingNotice">
             Your profile is under review. We will contact you soon.
@@ -158,9 +184,7 @@ if (!form.phone || !isValidPhoneNumber(form.phone)) {
           Academy / Club Registration
         </h2>
 
-        <p className="authSubtitle">
-          Create your organisation profile
-        </p>
+        <p className="authSubtitle">Create your organisation profile</p>
 
         <form onSubmit={handleSubmit}>
           <div className="formSection">
@@ -192,23 +216,23 @@ if (!form.phone || !isValidPhoneNumber(form.phone)) {
               required
             />
 
-  <div className="phoneInputWrap">
-  <div className="phoneField">
-    <span className="phonePrefix">+381</span>
+            <div className="phoneInputWrap">
+              <div className="phoneField">
+                <span className="phonePrefix">+381</span>
 
-    <PhoneInput
-      defaultCountry="RS"
-      placeholder="Phone number *"
-      value={form.phone}
-      onChange={(value) =>
-        setForm((prev) => ({
-          ...prev,
-          phone: value || "",
-        }))
-      }
-    />
-  </div>
-</div>
+                <PhoneInput
+                  defaultCountry="RS"
+                  placeholder="Phone number *"
+                  value={form.phone}
+                  onChange={(value) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      phone: value || "",
+                    }))
+                  }
+                />
+              </div>
+            </div>
           </div>
 
           <div className="formSection">
@@ -249,7 +273,42 @@ if (!form.phone || !isValidPhoneNumber(form.phone)) {
                 <option value="Europe">Europe</option>
                 <option value="North America">North America</option>
                 <option value="Asia">Asia</option>
+                <option value="Africa">Africa</option>
+                <option value="South America">South America</option>
+                <option value="Australia & Oceania">
+                  Australia & Oceania
+                </option>
               </select>
+            </div>
+          </div>
+
+          <div className="formSection">
+            <h3>Membership Plan</h3>
+
+            <div className="membershipSelect">
+              {academyMembershipPlans.map((plan) => (
+                <label
+                  key={plan.id}
+                  className={`membershipOption ${
+                    form.membershipPlan === plan.id ? "active" : ""
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="membershipPlan"
+                    value={plan.id}
+                    checked={form.membershipPlan === plan.id}
+                    onChange={handleChange}
+                    required
+                  />
+
+                  <div>
+                    <strong>{plan.name}</strong>
+                    <span>{plan.price}</span>
+                    <p>{plan.description}</p>
+                  </div>
+                </label>
+              ))}
             </div>
           </div>
 
@@ -261,9 +320,16 @@ if (!form.phone || !isValidPhoneNumber(form.phone)) {
               onChange={handleChange}
               required
             />
+
             <span>
-              I agree to <a href="/terms" target="_blank">Terms</a> and{" "}
-              <a href="/privacy" target="_blank">Privacy Policy</a>
+              I agree to{" "}
+              <a href="/terms" target="_blank" rel="noreferrer">
+                Terms
+              </a>{" "}
+              and{" "}
+              <a href="/privacy" target="_blank" rel="noreferrer">
+                Privacy Policy
+              </a>
             </span>
           </label>
 
