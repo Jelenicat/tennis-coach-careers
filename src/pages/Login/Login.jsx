@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import "../Register/auth.css";
 
-// 🔥 Firebase
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../../firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -21,7 +20,10 @@ export default function Login() {
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   }
 
   async function handleSubmit(e) {
@@ -30,7 +32,6 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // 1️⃣ Firebase Auth login
       const userCredential = await signInWithEmailAndPassword(
         auth,
         form.email,
@@ -39,7 +40,6 @@ export default function Login() {
 
       const user = userCredential.user;
 
-      // 2️⃣ Učitaj user podatke iz Firestore
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
 
@@ -49,23 +49,22 @@ export default function Login() {
 
       const userData = userSnap.data();
 
-      // 3️⃣ Redirect na osnovu role
-    if (userData.role === "admin") {
-  navigate("/admin");
+      if (userData.role === "admin") {
+        navigate("/admin");
+        return;
+      }
+
+      if (userData.role === "coach") {
+        navigate(`/coach/${user.uid}`);
+        return;
+      }
+
+  if (userData.role === "academy") {
+  const academyId = userData.academyId || userData.profileId || user.uid;
+
+  navigate(`/academy/${academyId}`);
   return;
 }
-
-if (userData.role === "coach") {
-  navigate(`/coach/${user.uid}`);
-  return;
-}
-
-if (userData.role === "academy") {
-  navigate(`/academy/${user.uid}`);
-  return;
-}
-
-throw new Error("Unknown user role.");
 
       throw new Error("Unknown user role.");
     } catch (err) {
@@ -80,6 +79,7 @@ throw new Error("Unknown user role.");
     <div className="authPage">
       <div className="authCard">
         <h1 className="authTitle">Log in</h1>
+
         <p className="authSubtitle">
           Welcome back to Tennis Coach Careers
         </p>
@@ -106,15 +106,15 @@ throw new Error("Unknown user role.");
           {error && <div className="authError">{error}</div>}
 
           <div className="loginBtnWrap">
-  <Button type="submit" disabled={loading}>
-    {loading ? "Logging in..." : "Log in"}
-  </Button>
-</div>
-
+            <Button type="submit" disabled={loading}>
+              {loading ? "Logging in..." : "Log in"}
+            </Button>
+          </div>
         </form>
 
         <div className="authFooter">
           <span>Don’t have an account?</span>
+
           <button
             className="linkBtn"
             onClick={() => navigate("/choose-role")}

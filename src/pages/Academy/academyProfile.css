@@ -1,219 +1,40 @@
 /* ===============================
-   PAGE WRAPPER
+   PAGE
 ================================ */
 .coachProfilePage {
   min-height: 100vh;
-  background: linear-gradient(
-      to bottom,
-      rgba(5, 25, 40, 0.85),
-      rgba(5, 25, 40, 0.95)
-    ),
+  padding-bottom: 80px;
+  background:
+    linear-gradient(to bottom, rgba(5, 25, 40, 0.86), rgba(5, 25, 40, 0.96)),
     url("/images/tennis-bg.webp");
   background-size: cover;
   background-position: center;
-  padding-bottom: 80px;
+  color: #fff;
+}
+
+/* ===============================
+   LOADER
+================================ */
+.loader {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(to bottom, rgba(5, 25, 40, 0.9), rgba(5, 25, 40, 0.98)),
+    url("/images/tennis-bg.webp");
+  background-size: cover;
+  background-position: center;
+  color: #fff;
 }
 
 /* ===============================
    HERO
 ================================ */
 .coachHero {
-  padding: 56px 24px;
-}
-
-.coachHeroContent {
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.coachInfo h1 {
-  font-size: 36px;
-  margin-bottom: 6px;
-  color: #fff;
-}
-
-.coachInfo p {
-  color: #cbd5e1;
-  font-size: 15px;
-  margin-bottom: 4px;
-}
-
-.academyAddress {
-  font-size: 14px;
-  color: #94a3b8;
-  margin-top: 4px;
-}
-
-/* ===============================
-   INPUTS (HERO)
-================================ */
-.inputHero {
-  width: 100%;
-  padding: 14px 16px;
-  border-radius: 14px;
-  border: none;
-  margin-bottom: 10px;
-  font-size: 15px;
-}
-
-.inputHero.small {
-  max-width: 320px;
-}
-
-/* ===============================
-   BUTTONS
-================================ */
-.primaryBtn {
-  background: #facc15;
-  color: #000;
-  padding: 10px 22px;
-  border-radius: 20px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.secondaryBtn {
-  background: #fff;
-  color: #000;
-  padding: 10px 22px;
-  border-radius: 20px;
-  border: none;
-  cursor: pointer;
-}
-
-.dangerBtn {
-  background: #ef4444;
-  color: #fff;
-  padding: 8px 16px;
-  border-radius: 16px;
-  border: none;
-  cursor: pointer;
-}
-
-.editActions {
-  display: flex;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-/* ===============================
-   EDIT SECTION
-================================ */
-.editSection {
-  max-width: 1100px;
-  margin: 40px auto 0;
-  padding: 0 24px;
-}
-
-.sectionTitle {
-  color: #fff;
-  margin-bottom: 12px;
-}
-
-.editCard {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(14px);
-  border-radius: 22px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.editCard input {
-  padding: 14px 16px;
-  border-radius: 14px;
-  border: none;
-  font-size: 14px;
-}
-
-/* ===============================
-   DASHBOARD ACTIONS
-================================ */
-.dashboardActions {
-  max-width: 1100px;
-  margin: 40px auto;
-  padding: 0 24px;
-  display: flex;
-  gap: 16px;
-}
-
-/* ===============================
-   CARDS
-================================ */
-.card {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(14px);
-  border-radius: 22px;
-  padding: 24px;
-  color: #fff;
- 
-}
-
-.card h3,
-.card h4 {
-  margin-top: 2px;
-  font-size: 25px;
-}
-
-.card p {
-  font-size: 14px;
-  color: #e5e7eb;
-}
-
-/* ===============================
-   JOB FORM
-================================ */
-.card input,
-.card textarea {
-  width: 100%;
-  padding: 14px 16px;
-  border-radius: 14px;
-  border: none;
-  margin-bottom: 12px;
-  font-size: 14px;
-}
-
-.card textarea {
-  resize: vertical;
-  min-height: 90px;
-}
-
-/* ===============================
-   JOB LIST
-================================ */
-.jobsList {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-.jobActions {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-/* ===============================
-   RESPONSIVE
-================================ */
-@media (max-width: 768px) {
-  .coachInfo h1 {
-    font-size: 28px;
-  }
-
-  .dashboardActions {
-    flex-direction: column;
-  }
-
-  .inputHero.small {
-    max-width: 100%;
-  }
-}
-.coachHero {
   position: relative;
   overflow: hidden;
+  padding: 56px 24px 36px;
 }
 
 .coachHero::after {
@@ -222,109 +43,323 @@
   inset: 0;
   background: radial-gradient(
     circle at 30% 20%,
-    rgba(250, 204, 21, 0.08),
-    transparent 60%
+    rgba(250, 204, 21, 0.1),
+    transparent 58%
   );
   pointer-events: none;
 }
+
+.coachHeroContent {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 0 auto;
+  animation: fadeUp 0.6s ease both;
+}
+
+.coachInfo h1 {
+  margin: 0 0 8px;
+  font-size: 38px;
+  line-height: 1.1;
+  color: #fff;
+  text-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+}
+
+.coachInfo p {
+  margin: 0 0 5px;
+  color: #cbd5e1;
+  font-size: 15px;
+}
+
+.academyAddress {
+  color: #94a3b8 !important;
+  font-size: 14px !important;
+}
+
+/* ===============================
+   HERO ACTIONS
+================================ */
+.heroActions,
+.editActions,
+.jobActions,
+.logoutActions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+/* ===============================
+   BUTTONS
+================================ */
+.primaryBtn,
+.secondaryBtn,
+.dangerBtn,
+.logoutBtn {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  font-weight: 700;
+  transition: all 0.25s ease;
+}
+
+.primaryBtn {
+  background: #facc15;
+  color: #061524;
+  padding: 11px 22px;
+  box-shadow: 0 10px 26px rgba(250, 204, 21, 0.25);
+}
+
+.secondaryBtn {
+  background: #fff;
+  color: #061524;
+  padding: 11px 22px;
+}
+
+.dangerBtn {
+  background: #ef4444;
+  color: #fff;
+  padding: 11px 20px;
+}
+
+.logoutBtn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  color: #fff;
+  padding: 10px 18px;
+}
+
+.primaryBtn:hover,
+.secondaryBtn:hover,
+.dangerBtn:hover,
+.logoutBtn:hover {
+  transform: translateY(-2px);
+}
+
+.primaryBtn:hover {
+  box-shadow: 0 14px 32px rgba(250, 204, 21, 0.38);
+}
+
+.secondaryBtn:hover {
+  box-shadow: 0 12px 28px rgba(255, 255, 255, 0.22);
+}
+
+.dangerBtn:hover {
+  box-shadow: 0 12px 28px rgba(239, 68, 68, 0.35);
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ===============================
+   DASHBOARD ACTIONS
+================================ */
+.dashboardActions {
+  max-width: 1100px;
+  margin: 28px auto 32px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.muted {
+  color: #cbd5e1;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ===============================
+   CARDS
+================================ */
 .card,
 .editCard {
-  transition: transform 0.35s ease, box-shadow 0.35s ease,
-    background 0.35s ease;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 24px;
+  padding: 24px;
+  color: #fff;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
 
 .card:hover,
 .editCard:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   background: rgba(255, 255, 255, 0.12);
-  box-shadow:
-    0 20px 40px rgba(0, 0, 0, 0.35),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-}
-.primaryBtn,
-.secondaryBtn,
-.dangerBtn {
-  transition: all 0.25s ease;
+  box-shadow: 0 26px 56px rgba(0, 0, 0, 0.34);
 }
 
-.primaryBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(250, 204, 21, 0.4);
+.card h3,
+.card h4 {
+  margin: 0 0 16px;
+  font-size: 24px;
+  line-height: 1.2;
 }
 
-.secondaryBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(255, 255, 255, 0.25);
+.card p {
+  margin: 8px 0;
+  color: #e5e7eb;
+  font-size: 14px;
+  line-height: 1.55;
 }
 
-.dangerBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);
+.membershipCard {
+  max-width: 1100px;
+  margin: 0 auto 28px;
 }
+
+/* ===============================
+   EDIT SECTION
+================================ */
+.editSection,
+.jobsList {
+  max-width: 1100px;
+  margin: 32px auto 0;
+  padding: 0 24px;
+  animation: fadeUp 0.6s ease both;
+}
+
+.sectionTitle {
+  margin: 0 0 14px;
+  color: #fff;
+}
+
+.editCard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ===============================
+   INPUTS
+================================ */
+.inputHero,
+.card input,
+.card textarea,
+.editCard input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.96);
+  color: #061524;
+  font-size: 14px;
+}
+
+.card textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.card input,
+.card textarea {
+  margin-bottom: 12px;
+}
+
 input:focus,
 textarea:focus {
   outline: none;
   box-shadow:
     0 0 0 2px rgba(250, 204, 21, 0.6),
-    0 0 18px rgba(250, 204, 21, 0.35);
-}
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    0 0 18px rgba(250, 204, 21, 0.32);
 }
 
-.coachHeroContent,
-.editSection,
+.heroInputRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.heroField.floating {
+  position: relative;
+}
+
+.heroField.floating input {
+  padding-top: 19px;
+}
+
+.heroField.floating label {
+  position: absolute;
+  left: 12px;
+  top: 15px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  color: rgba(15, 23, 42, 0.55);
+  font-size: 13px;
+  pointer-events: none;
+  transition: all 0.22s ease;
+}
+
+.heroField.floating input:focus + label,
+.heroField.floating input:not(:placeholder-shown) + label {
+  top: -8px;
+  transform: scale(0.88);
+  transform-origin: left center;
+  color: #ca8a04;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.salaryRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ===============================
+   JOB LIST
+================================ */
 .jobsList {
-  animation: fadeUp 0.6s ease forwards;
-}
-.coachInfo h1 {
-  text-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
-}
-.dashboardActions::before {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(255, 255, 255, 0.25),
-    transparent
-  );
+  display: grid;
+  gap: 18px;
 }
 
 /* ===============================
-   VIEW COACHES – CARD
-=============================== */
+   COACH LIST OVERLAY
+================================ */
+.coachOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    linear-gradient(to bottom, rgba(5, 25, 40, 0.72), rgba(5, 25, 40, 0.92)),
+    url("/images/tennis-bg.webp");
+  background-size: cover;
+  background-position: center;
+}
+
 .coachListCard {
-  max-width: 900px;
   width: 100%;
-  margin: 0 auto;
-
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-
-  border-radius: 24px;
-  padding: 26px;
-  color: #fff;
-
-  box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.35),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-
-  animation: fadeUp 0.45s ease both;
+  max-width: 860px;
+  max-height: 82vh;
+  overflow-y: auto;
+  border-radius: 28px;
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.93);
+  color: #0b2a3d;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+  animation: cardEnter 0.45s ease both;
 }
 
-/* ===============================
-   HEADER
-=============================== */
 .coachListHeader {
   display: flex;
   justify-content: space-between;
@@ -334,216 +369,9 @@ textarea:focus {
 }
 
 .coachListHeader h3 {
-  font-size: 24px;
   margin: 0;
+  font-size: 24px;
 }
-
-/* ===============================
-   SEARCH
-=============================== */
-.coachSearch {
-  width: 100%;
-  margin-bottom: 22px;
-
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 16px;
-
-  padding: 13px 16px;
-  color: #fff;
-  font-size: 14px;
-
-  outline: none;
-  transition: all 0.25s ease;
-}
-
-.coachSearch::placeholder {
-  color: #9ca3af;
-}
-
-.coachSearch:focus {
-  border-color: #facc15;
-  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.25);
-  background: rgba(0, 0, 0, 0.45);
-}
-
-/* ===============================
-   COACH ROW
-=============================== */
-.coachRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  padding: 16px 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-
-  transition: background 0.25s ease, transform 0.25s ease;
-}
-
-.coachRow:last-child {
-  border-bottom: none;
-}
-
-.coachRow:hover {
-  background: rgba(255, 255, 255, 0.05);
-  transform: translateY(-1px);
-}
-
-/* ===============================
-   LEFT SIDE (AVATAR + INFO)
-=============================== */
-.coachInfoLeft {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.coachAvatarSmall {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  object-fit: cover;
-
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-}
-
-.coachName {
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.coachLocation {
-  font-size: 13px;
-  color: #9ca3af;
-  margin-top: 2px;
-}
-
-/* ===============================
-   BUTTON
-=============================== */
-.coachRow .secondaryBtn {
-  padding: 10px 20px;
-  border-radius: 18px;
-  white-space: nowrap;
-  transition: all 0.25s ease;
-}
-
-.coachRow .secondaryBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(255, 255, 255, 0.25);
-}
-
-/* ===============================
-   EMPTY STATE
-=============================== */
-.coachEmpty {
-  color: #9ca3af;
-  font-size: 14px;
-  margin-top: 12px;
-  text-align: center;
-}
-
-/* ===============================
-   MOBILE
-=============================== */
-@media (max-width: 640px) {
-  .coachListCard {
-    padding: 20px;
-  }
-
-  .coachRow {
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .coachInfoLeft {
-    flex: 1;
-  }
-
-  .coachRow .secondaryBtn {
-    padding: 8px 16px;
-    font-size: 13px;
-  }
-
-  .coachAvatarSmall {
-    width: 40px;
-    height: 40px;
-  }
-}
-/* FULLSCREEN OVERLAY */
-/* ================= COACH LIST OVERLAY ================= */
-/* ===========================
-   FIND COACH BACKGROUND
-=========================== */
-
-.coachOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 24px;
-
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(5, 25, 40, 0.55),
-      rgba(5, 25, 40, 0.15)
-    ),
-    url("/images/tennis-bg.webp");
-
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-}
-
-/* ===========================
-   COACH LIST CARD
-=========================== */
-
-.coachListCard {
-  width: 100%;
-  max-width: 860px;
-  max-height: 80vh;
-  overflow-y: auto;
-
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.9),
-    rgba(255, 255, 255, 0.9)
-  );
-
-  border-radius: 28px;
-  padding: 28px;
-
-  backdrop-filter: blur(14px);
-  box-shadow: 0 30px 70px rgba(0,0,0,0.45);
-
-  animation: cardEnter 0.6s ease-out forwards;
-}
-
-/* ===========================
-   HEADER
-=========================== */
-
-.coachListHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  color: #0b2a3d;
-}
-
-/* ===========================
-   SEARCH
-=========================== */
 
 .coachSearchWrap {
   margin-bottom: 20px;
@@ -551,30 +379,29 @@ textarea:focus {
 
 .coachSearch {
   width: 100%;
-  padding: 12px 16px;
-  border-radius: 14px;
-  border: 1px solid rgba(0,0,0,0.15);
-  background: rgba(255,255,255,0.85);
+  padding: 13px 16px;
+  border-radius: 15px;
+  border: 1px solid rgba(11, 42, 61, 0.18);
+  background: #fff;
+  color: #0b2a3d;
   font-size: 14px;
 }
 
-.coachSearch:focus {
-  outline: none;
-  border-color: #f6de59;
-  box-shadow: 0 0 0 2px rgba(246, 222, 89, 0.35);
+.coachSearch::placeholder {
+  color: #64748b;
 }
-
-/* ===========================
-   ROW
-=========================== */
 
 .coachRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 14px;
+  padding: 15px 0;
+  border-bottom: 1px solid rgba(11, 42, 61, 0.12);
+}
 
-  padding: 14px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.35);
+.coachRow:last-child {
+  border-bottom: none;
 }
 
 .coachInfoLeft {
@@ -588,38 +415,86 @@ textarea:focus {
   height: 46px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #f6de59;
+  border: 2px solid #facc15;
+  background: rgba(11, 42, 61, 0.08);
 }
 
 .coachName {
-  font-weight: 700;
+  font-weight: 800;
   color: #0b2a3d;
 }
 
 .coachLocation {
+  margin-top: 3px;
+  color: #475569;
   font-size: 13px;
-  opacity: 0.7;
-  color: #0b2a3d;
 }
-
-/* ===========================
-   EMPTY
-=========================== */
 
 .coachEmpty {
-  text-align: center;
   margin-top: 20px;
-  opacity: 0.6;
+  text-align: center;
+  color: #64748b;
 }
 
-/* ===========================
-   ANIMATION
-=========================== */
+/* ===============================
+   LOGOUT MODAL
+================================ */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(5, 25, 40, 0.76);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  animation: fadeIn 0.25s ease both;
+}
+
+.logoutModal {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 28px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 22px 62px rgba(0, 0, 0, 0.45);
+  animation: scaleIn 0.25s ease both;
+}
+
+.logoutModal h3 {
+  margin: 0 0 8px;
+  font-size: 23px;
+}
+
+.logoutModal p {
+  margin: 0 0 24px;
+  color: #e5e7eb;
+  font-size: 14px;
+}
+
+/* ===============================
+   ANIMATIONS
+================================ */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 @keyframes cardEnter {
   from {
     opacity: 0;
-    transform: translateY(30px) scale(0.98);
+    transform: translateY(28px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -627,160 +502,94 @@ textarea:focus {
   }
 }
 
-.heroActions {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  position: relative;
-  z-index: 5;
-}
-
-.logoutBtn {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.55);
-  color: #fff;
-  padding: 10px 18px;
-  border-radius: 999px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.25s ease;
-}
-
-.logoutBtn:hover {
-  background: rgba(255,255,255,0.15);
-  transform: translateY(-1px);
-}
-
-.authOverlayFull{
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  z-index: 999999 !important;
-
-  background:
-    linear-gradient(to bottom, rgba(5,25,40,0.95), rgba(5,25,40,0.98)),
-    url("/images/tennis-bg.webp");
-  background-size: cover;
-  background-position: center;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.authModalFull{
-  width: 100% !important;
-  height: 100% !important;
-  max-width: none !important;
-  border-radius: 0 !important;
-
-  padding: 48px 24px !important;
-  background: rgba(5,25,40,0.75) !important;
-  backdrop-filter: blur(16px);
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  text-align: center;
-}
-/* ================= LOGOUT MODAL OVERLAY ================= */
-
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-
-  background: rgba(5, 25, 40, 0.75);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  animation: fadeIn 0.25s ease;
-}
-
-/* ================= LOGOUT MODAL CARD ================= */
-
-.logoutModal {
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-
-  border-radius: 22px;
-  padding: 32px 28px;
-  width: 100%;
-  max-width: 420px;
-
-  color: white;
-  text-align: center;
-
-  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
-  animation: scaleIn 0.25s ease;
-}
-
-.logoutModal h3 {
-  font-size: 22px;
-  margin-bottom: 8px;
-}
-
-.logoutModal p {
-  font-size: 14px;
-  opacity: 0.9;
-  margin-bottom: 26px;
-}
-
-/* ================= ACTIONS ================= */
-
-.logoutActions {
-  display: flex;
-  gap: 14px;
-  justify-content: center;
-}
-
-.logoutActions button {
-  min-width: 120px;
-}
-
-/* DANGER BUTTON */
-.dangerBtn {
-  background: #f5d547;
-  color: #000;
-  border: none;
-  padding: 12px 22px;
-  border-radius: 999px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(245,213,71,0.45);
-}
-
-/* ================= ANIMATIONS ================= */
-
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes scaleIn {
   from {
-    transform: scale(0.95);
     opacity: 0;
   }
   to {
-    transform: scale(1);
     opacity: 1;
   }
 }
 
-/* ================= MOBILE ================= */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ===============================
+   RESPONSIVE
+================================ */
+@media (max-width: 768px) {
+  .coachHero {
+    padding: 42px 18px 28px;
+  }
+
+  .coachInfo h1 {
+    font-size: 30px;
+  }
+
+  .dashboardActions,
+  .editSection,
+  .jobsList {
+    padding: 0 18px;
+  }
+
+  .dashboardActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboardActions button {
+    width: 100%;
+  }
+
+  .heroInputRow,
+  .salaryRow {
+    grid-template-columns: 1fr;
+  }
+
+  .heroActions,
+  .editActions,
+  .jobActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .heroActions button,
+  .editActions button,
+  .jobActions button {
+    width: 100%;
+  }
+
+  .coachListCard {
+    padding: 22px;
+  }
+
+  .coachRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .coachRow .secondaryBtn {
+    width: 100%;
+  }
+}
 
 @media (max-width: 480px) {
+  .card,
+  .editCard,
+  .coachListCard {
+    border-radius: 20px;
+    padding: 20px;
+  }
+
   .logoutModal {
-    margin: 0 16px;
     padding: 26px 20px;
   }
 
@@ -791,98 +600,208 @@ textarea:focus {
   .logoutActions button {
     width: 100%;
   }
-}/* ===============================
-   HERO INPUT LAYOUT
-================================ */
+}
+/* ================= SUCCESS MODAL ================= */
 
+.successModal {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+  border-radius: 24px;
+  padding: 34px 28px;
+  width: 100%;
+  max-width: 420px;
 
+  text-align: center;
+  color: white;
 
-.heroInputRow .inputHero.small {
-  flex: 1;
+  box-shadow: 0 25px 70px rgba(0,0,0,0.45);
+  animation: scaleIn 0.25s ease;
 }
 
-/* Mobile */
+.successIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 auto 18px;
+
+  font-size: 28px;
+  font-weight: bold;
+
+  background: linear-gradient(135deg, #facc15, #fde68a);
+  color: #000;
+
+  box-shadow: 0 10px 30px rgba(250, 204, 21, 0.45);
+}
+
+.successModal h3 {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.successModal p {
+  font-size: 14px;
+  margin-bottom: 22px;
+  color: #ffffff;
+  opacity: 0.85; /* ako hoćeš malo soft */
+}
+.upgradeBtn {
+  margin-left: 10px;
+}
+
+.membershipCard .upgradeBtn {
+  background: rgba(255, 255, 255, 0.95);
+  color: #061524;
+    margin-top: 10px;
+}
+
+.membershipCard .upgradeBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
-  .heroInputRow {
-    flex-direction: column;
+  .upgradeBtn {
+    margin-left: 0;
+    margin-top: 10px;
   }
+}
+.extensionBox {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.extensionLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.extensionSelect {
+  width: 100%;
+  max-width: 320px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  outline: none;
+}
+
+.extensionSelect option {
+  color: #111;
 }
 /* ===============================
-   HERO FIELD – FLOATING LABEL
+   PREMIUM MEMBERSHIP CARD
 ================================ */
 
-.heroField.floating {
-  position: relative;
-  animation: labelFadeIn 0.45s ease forwards;
-}
+.membershipCard {
+  max-width: 560px;
+  margin: 0 auto 34px;
+  padding: 34px 34px 38px;
+  border-radius: 32px;
+  text-align: center;
 
-/* input */
-.heroField.floating input {
-  padding-top: 18px;
-}
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06)),
+    rgba(9, 34, 53, 0.72);
 
-/* label – default stanje */
-.heroField.floating label {
-  position: absolute;
-  left: 2px;
-  top: 24px; /* ⬅️ OVO JE KLJUČ */
-  
-  font-size: 14px;
-  font-weight: 500;
-
-  color: rgba(15, 23, 42, 0.55);
-  background: rgba(255, 255, 255, 0.9);
-  padding: 0 6px;
-  border-radius: 6px;
-
-  pointer-events: none;
-
-   transition:
-    top 0.25s ease,
-    transform 0.25s ease,
-    color 0.2s ease;
-}
-
-
-/* popunjeno (nije fokus) */
-.heroField.floating input:not(:placeholder-shown) + label {
-  top: -8px;
-  transform: translateY(0) scale(0.85);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-
-  color: rgba(15, 23, 42, 0.6);
-}
-
-/* fokus stanje */
-.heroField.floating input:focus + label {
-  color: #facc15;
-}
-
-/* fokus ring */
-.heroField.floating input:focus {
+  border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow:
-    0 0 0 2px rgba(250, 204, 21, 0.6),
-    0 0 22px rgba(250, 204, 21, 0.45);
+    0 28px 70px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
-/* ulazna animacija */
-@keyframes labelFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.salaryRow {
-  display: flex;
-  gap: 12px;
+.membershipCard h3 {
+  font-size: 30px;
+  margin-bottom: 22px;
 }
 
-.salaryRow input {
-  flex: 1;
+.membershipCard p {
+  font-size: 16px;
+  margin: 12px 0;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.membershipCard strong {
+  color: #ffffff;
+}
+
+.extensionBox {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  align-items: center;
+  gap: 14px;
+}
+
+.extensionLabel {
+  font-size: 14px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.extensionSelect {
+  width: 100%;
+  max-width: 400px;
+  height: 58px;
+  padding: 0 20px;
+  border-radius: 18px;
+  font-size: 16px;
+  font-weight: 600;
+
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.extensionSelect:focus {
+  box-shadow:
+    0 0 0 2px rgba(250, 204, 21, 0.42),
+    0 0 24px rgba(250, 204, 21, 0.22);
+}
+
+.extensionSelect option {
+  color: #061524;
+}
+
+.membershipCard .primaryBtn,
+.membershipCard .secondaryBtn {
+  width: 100%;
+  max-width: 400px;
+  height: 54px;
+  font-size: 15px;
+}
+
+.membershipCard .primaryBtn {
+  margin-top: 12px;
+}
+
+.membershipCard .upgradeBtn {
+  margin-left: 0;
+  margin-top: 14px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+@media (max-width: 600px) {
+  .membershipCard {
+    max-width: calc(100% - 28px);
+    padding: 30px 22px 34px;
+    border-radius: 28px;
+  }
+
+  .membershipCard h3 {
+    font-size: 28px;
+  }
+}
+.upgradeBtn {
+  margin-top: 14px;
+  width: 100%;
+  max-width: 360px;
 }

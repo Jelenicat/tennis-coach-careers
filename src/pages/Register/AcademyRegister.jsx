@@ -6,7 +6,10 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import "react-phone-number-input/style.css";
-import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
+import PhoneInput, {
+  isValidPhoneNumber,
+  getCountryCallingCode,
+} from "react-phone-number-input";
 
 const EMAIL_API_URL =
   "https://email-api-vert-beta.vercel.app/api/send-registration-request";
@@ -30,6 +33,9 @@ const academyMembershipPlans = [
 export default function AcademyRegister() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const [country, setCountry] = useState("RS");
+  const callingCode = country ? `+${getCountryCallingCode(country)}` : "";
 
   const [form, setForm] = useState({
     contactName: "",
@@ -81,6 +87,17 @@ export default function AcademyRegister() {
       return;
     }
 
+    const selectedPlan = academyMembershipPlans.find(
+      (plan) => plan.id === form.membershipPlan
+    );
+
+    const membershipData = {
+      id: selectedPlan?.id || form.membershipPlan,
+      name: selectedPlan?.name || "",
+      price: selectedPlan?.price || "",
+      description: selectedPlan?.description || "",
+    };
+
     setLoading(true);
 
     try {
@@ -96,6 +113,9 @@ export default function AcademyRegister() {
         role: "academy",
         profileId: uid,
         email: form.email,
+
+        organisationName: form.organisationName,
+        contactName: form.contactName,
 
         approvalStatus: "pending",
         profileVisible: false,
@@ -116,6 +136,7 @@ export default function AcademyRegister() {
         region: form.region,
 
         membershipPlan: form.membershipPlan,
+        membership: membershipData,
         membershipStatus: "pending",
 
         role: "academy",
@@ -139,7 +160,9 @@ export default function AcademyRegister() {
         address: form.address,
         city: form.city,
         region: form.region,
+
         membershipPlan: form.membershipPlan,
+        membership: membershipData,
       });
 
       setSuccess(true);
@@ -218,12 +241,16 @@ export default function AcademyRegister() {
 
             <div className="phoneInputWrap">
               <div className="phoneField">
-                <span className="phonePrefix">+381</span>
+                <span className="phonePrefix">{callingCode}</span>
 
                 <PhoneInput
                   defaultCountry="RS"
+                  country={country}
                   placeholder="Phone number *"
                   value={form.phone}
+                  onCountryChange={(value) => {
+                    if (value) setCountry(value);
+                  }}
                   onChange={(value) =>
                     setForm((prev) => ({
                       ...prev,
@@ -333,7 +360,7 @@ export default function AcademyRegister() {
             </span>
           </label>
 
-          <Button className="primaryBtn full" disabled={loading}>
+          <Button className="primaryBtn full" type="submit" disabled={loading}>
             {loading ? "Sending..." : "Create Profile"}
           </Button>
         </form>

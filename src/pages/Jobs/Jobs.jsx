@@ -1,6 +1,16 @@
 import "./jobs.css";
 import { useEffect, useMemo, useState } from "react";
-import { collectionGroup, getDocs } from "firebase/firestore";
+import {
+  collectionGroup,
+  collection,
+  getDocs,
+  addDoc,
+  query,
+  where,
+  doc,
+  getDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import { db } from "../../firebase";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
@@ -14,22 +24,53 @@ export default function Jobs() {
   const [countries, setCountries] = useState([]);
   const [maxSalary, setMaxSalary] = useState(10000);
 
-const [filters, setFilters] = useState({
-  country: "",
-  city: "",
-  minSalary: 0   // ⬅️ BITNO
-});
+  const [filters, setFilters] = useState({
+    country: "",
+    city: "",
+    minSalary: 0,
+  });
 
-
-  // ✅ auth state
   const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [coach, setCoach] = useState(null);
+  const [applications, setApplications] = useState([]);
 
-  // ✅ auth prompt modal
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+
+  const [noticeModal, setNoticeModal] = useState({
+    show: false,
+    title: "",
+    message: "",
+  });
 
   useEffect(() => {
     const auth = getAuth();
-    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+
+      if (!u) {
+        setUserRole(null);
+        setCoach(null);
+        setApplications([]);
+        return;
+      }
+
+      const userSnap = await getDoc(doc(db, "users", u.uid));
+
+      if (userSnap.exists()) {
+        setUserRole(userSnap.data().role || null);
+      }
+
+      const coachSnap = await getDoc(doc(db, "coaches", u.uid));
+
+      if (coachSnap.exists()) {
+        setCoach(coachSnap.data());
+      }
+
+      await fetchApplications(u.uid);
+    });
+
     return () => unsub();
   }, []);
 
@@ -39,78 +80,186 @@ const [filters, setFilters] = useState({
 
       const jobsData = snap.docs.map((d) => ({
         id: d.id,
+        jobPath: d.ref.path,
         ...d.data(),
       }));
 
       setJobs(jobsData);
 
-      // dropdown countries
       const uniqueCountries = [
         ...new Set(jobsData.map((j) => j.country).filter(Boolean)),
       ];
       setCountries(uniqueCountries);
 
-      // max salary for slider
-const salaries = jobsData
-  .map((j) => Number(j.maxSalary))
-  .filter((s) => Number.isFinite(s) && s > 0);
+      const salaries = jobsData
+        .map((j) => Number(j.maxSalary))
+        .filter((s) => Number.isFinite(s) && s > 0);
 
-if (salaries.length) {
-  setMaxSalary(Math.max(...salaries));
-}
-
+      if (salaries.length) {
+        setMaxSalary(Math.max(...salaries));
+      }
     }
 
     fetchJobs();
   }, []);
 
-const filteredJobs = useMemo(() => {
-  return jobs.filter((job) => {
-    const matchCountry =
-      !filters.country ||
-      job.country?.toLowerCase().includes(filters.country.toLowerCase());
+  async function fetchApplications(coachId) {
+    const q = query(
+      collection(db, "jobApplications"),
+      where("coachId", "==", coachId)
+    );
 
-    const matchCity =
-      !filters.city ||
-      job.city?.toLowerCase().includes(filters.city.toLowerCase());
+    const snap = await getDocs(q);
 
-    const matchSalary =
-      !filters.minSalary ||
-      Number(job.maxSalary || 0) >= Number(filters.minSalary);
+    setApplications(
+      snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }))
+    );
+  }
 
-    return matchCountry && matchCity && matchSalary;
-  });
-}, [jobs, filters]);
+  function getMembershipKey() {
+    return (
+      coach?.membership?.id ||
+      coach?.membershipPlan ||
+      coach?.membership ||
+      "standard"
+    )
+      .toString()
+      .toLowerCase();
+  }
 
+  function hasApplied(job) {
+    return applications.some(
+      (app) => app.jobPath === job.jobPath || app.jobId === job.id
+    );
+  }
+
+  function openNotice(title, message) {
+    setNoticeModal({
+      show: true,
+      title,
+      message,
+    });
+  }
+
+  async function handleApply(job) {
+    if (!user) {
+      setShowAuthPrompt(true);
+      return;
+    }
+
+    if (userRole !== "coach") {
+      openNotice(
+        "Coach account required",
+        "Only coaches can apply for jobs."
+      );
+      return;
+    }
+
+    if (!coach) {
+      openNotice(
+        "Profile not found",
+        "Your coach profile could not be loaded."
+      );
+      return;
+    }
+
+    if (hasApplied(job)) {
+      openNotice(
+        "Already applied",
+        "You have already applied for this job."
+      );
+      return;
+    }
+
+    const membership = getMembershipKey();
+
+    if (membership === "standard" && applications.length >= 5) {
+      openNotice(
+        "Application limit reached",
+        "Standard membership allows only 5 job applications. Please upgrade your membership to apply for more jobs."
+      );
+      return;
+    }
+
+    await addDoc(collection(db, "jobApplications"), {
+      jobId: job.id,
+      jobPath: job.jobPath,
+
+      jobTitle: job.title || "",
+      academyId: job.academyId || "",
+      academyName: job.academyName || "",
+
+      coachId: user.uid,
+      coachName: coach.fullName || "",
+      coachEmail: coach.email || user.email || "",
+      coachNationality: coach.nationality || "",
+      coachResidence: coach.residence || "",
+      coachRegion: coach.region || "",
+      coachProfileImage: coach.profileImage || "",
+
+      membership,
+      status: "pending",
+      createdAt: serverTimestamp(),
+    });
+
+    const newApplication = {
+      jobId: job.id,
+      jobPath: job.jobPath,
+      status: "pending",
+    };
+
+    setApplications((prev) => [...prev, newApplication]);
+
+    openNotice(
+      "Application sent",
+      "Your application has been successfully sent to the academy."
+    );
+  }
+
+  const filteredJobs = useMemo(() => {
+    return jobs.filter((job) => {
+      const matchCountry =
+        !filters.country ||
+        job.country?.toLowerCase().includes(filters.country.toLowerCase());
+
+      const matchCity =
+        !filters.city ||
+        job.city?.toLowerCase().includes(filters.city.toLowerCase());
+
+      const matchSalary =
+        !filters.minSalary ||
+        Number(job.maxSalary || 0) >= Number(filters.minSalary);
+
+      return matchCountry && matchCity && matchSalary;
+    });
+  }, [jobs, filters]);
 
   function requireAuth(action) {
     if (!user) {
       setShowAuthPrompt(true);
       return;
     }
+
     action?.();
   }
 
-const salaryPercent =
-  maxSalary > 0 ? (filters.minSalary / maxSalary) * 100 : 0;
-
+  const salaryPercent =
+    maxSalary > 0 ? (filters.minSalary / maxSalary) * 100 : 0;
 
   return (
     <div className="jobsPage">
-      <button
-  className="backBtn"
-  onClick={() => navigate(-1)}
->
-  ← Back
-</button>
+      <button className="backBtn" onClick={() => navigate(-1)}>
+        ← Back
+      </button>
 
       <h1>Available Coaching Jobs</h1>
 
-      {/* ================= FILTERS ================= */}
       {!selectedJob && (
         <>
           <div className="jobsFilters animateFilters">
-            {/* COUNTRY DROPDOWN */}
             <select
               value={filters.country}
               onChange={(e) =>
@@ -125,154 +274,152 @@ const salaryPercent =
               ))}
             </select>
 
-            {/* CITY */}
             <input
               placeholder="City"
               value={filters.city ?? ""}
-              onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+              onChange={(e) =>
+                setFilters({ ...filters, city: e.target.value })
+              }
             />
 
-            {/* SALARY SLIDER – samo za ulogovane */}
-<div className="salarySlider" style={!user ? { opacity: 0.6 } : {}}>
-  <label>
-    Min salary: <strong>€{filters.minSalary.toLocaleString()}</strong>
-  </label>
+            <div className="salarySlider" style={!user ? { opacity: 0.6 } : {}}>
+              <label>
+                Min salary:{" "}
+                <strong>€{filters.minSalary.toLocaleString()}</strong>
+              </label>
 
-<input
-  type="range"
-  min={0}
-  max={maxSalary}
-  step={100}
-  value={filters.minSalary}
-  disabled={!user}
-  style={{
-    background: `linear-gradient(
-      to right,
-      #facc15 0%,
-      #facc15 ${salaryPercent}%,
-      rgba(255,255,255,0.3) ${salaryPercent}%,
-      rgba(255,255,255,0.3) 100%
-    )`,
-  }}
-  onChange={(e) =>
-    setFilters({
-      ...filters,
-      minSalary: Number(e.target.value),
-    })
-  }
-/>
+              <input
+                type="range"
+                min={0}
+                max={maxSalary}
+                step={100}
+                value={filters.minSalary}
+                disabled={!user}
+                style={{
+                  background: `linear-gradient(
+                    to right,
+                    #facc15 0%,
+                    #facc15 ${salaryPercent}%,
+                    rgba(255,255,255,0.3) ${salaryPercent}%,
+                    rgba(255,255,255,0.3) 100%
+                  )`,
+                }}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    minSalary: Number(e.target.value),
+                  })
+                }
+              />
 
-
-
-  {!user && (
-    <small className="sliderHint">
-      Log in to filter jobs by salary
-    </small>
-  )}
-</div>
-
-
+              {!user && (
+                <small className="sliderHint">
+                  Log in to filter jobs by salary
+                </small>
+              )}
+            </div>
 
             <button
               className="secondaryBtn"
               onClick={() =>
-             setFilters({ country: "", city: "", minSalary: 0 })
-
+                setFilters({ country: "", city: "", minSalary: 0 })
               }
             >
               Reset
             </button>
           </div>
 
-          {/* COUNTER */}
           <p className="jobsCount">
             {filteredJobs.length} job{filteredJobs.length !== 1 && "s"} found
           </p>
         </>
       )}
 
-      {/* ================= LIST VIEW ================= */}
       {!selectedJob && (
         <div className="jobsGrid">
-          {filteredJobs.map((job) => (
-            <div
-              key={job.id}
-              className="jobCard"
-              onClick={() =>
-                requireAuth(() => {
-                  setSelectedJob(job);
-                })
-              }
-              style={{ cursor: "pointer" }}
-            >
-              {/* ALWAYS VISIBLE */}
-              <h3>{job.title}</h3>
+          {filteredJobs.map((job) => {
+            const applied = hasApplied(job);
 
-              <p className="jobMeta">
-                📍 {job.city || "—"}, {job.country || "—"}
-              </p>
+            return (
+              <div
+                key={job.jobPath}
+                className="jobCard"
+                onClick={() =>
+                  requireAuth(() => {
+                    setSelectedJob(job);
+                  })
+                }
+                style={{ cursor: "pointer" }}
+              >
+                <h3>{job.title}</h3>
 
-              {/* ONLY FOR LOGGED IN USERS */}
-              {user && (
-                <>
-                  <p className="jobOrg">{job.academyName}</p>
+                <p className="jobMeta">
+                  📍 {job.city || "—"}, {job.country || "—"}
+                </p>
 
-                  <p className="jobMeta">
-                  💰{" "}
-{job.minSalary && job.maxSalary
-  ? `€${job.minSalary.toLocaleString()} – €${job.maxSalary.toLocaleString()}`
-  : "Negotiable"}
+                {user && (
+                  <>
+                    <p className="jobOrg">{job.academyName}</p>
 
-                  </p>
-
-                  <p className="jobDesc">
-                    <strong>Description:</strong> {job.description}
-                  </p>
-
-                  {job.benefits && (
-                    <p className="jobBenefits">
-                      <strong>Benefits:</strong> {job.benefits}
+                    <p className="jobMeta">
+                      💰{" "}
+                      {job.minSalary && job.maxSalary
+                        ? `€${Number(
+                            job.minSalary
+                          ).toLocaleString()} – €${Number(
+                            job.maxSalary
+                          ).toLocaleString()}`
+                        : "Negotiable"}
                     </p>
-                  )}
 
+                    <p className="jobDesc">
+                      <strong>Description:</strong> {job.description}
+                    </p>
+
+                    {job.benefits && (
+                      <p className="jobBenefits">
+                        <strong>Benefits:</strong> {job.benefits}
+                      </p>
+                    )}
+
+                    <div className="jobFooter">
+                      <span className="jobDate">{job.date}</span>
+
+                      <button
+                        className="primaryBtn"
+                        disabled={applied}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApply(job);
+                        }}
+                      >
+                        {applied ? "Applied" : "Apply"}
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {!user && (
                   <div className="jobFooter">
                     <span className="jobDate">{job.date}</span>
+
                     <button
                       className="primaryBtn"
                       onClick={(e) => {
                         e.stopPropagation();
-                        requireAuth(() => {
-                          // kasnije: apply flow
-                        });
+                        setShowAuthPrompt(true);
                       }}
                     >
-                      Apply
+                      View / Apply
                     </button>
                   </div>
-                </>
-              )}
-
-              {/* GUEST FOOTER (samo dugme) */}
-              {!user && (
-                <div className="jobFooter">
-                  <span className="jobDate">{job.date}</span>
-                  <button
-                    className="primaryBtn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowAuthPrompt(true);
-                    }}
-                  >
-                    View / Apply
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* ================= DETAIL VIEW (LOGGED IN ONLY) ================= */}
       {selectedJob && user && (
         <div className="jobDetail">
           <button
@@ -287,14 +434,18 @@ const salaryPercent =
 
             <p className="jobOrg">{selectedJob.academyName}</p>
 
-          <p className="jobMeta">
-  💰{" "}
-  {selectedJob.minSalary && selectedJob.maxSalary
-    ? `€${selectedJob.minSalary.toLocaleString()} – €${selectedJob.maxSalary.toLocaleString()}`
-    : "Negotiable"} 
-  • 📍 {selectedJob.country}, {selectedJob.city}, {selectedJob.address}
-</p>
-
+            <p className="jobMeta">
+              💰{" "}
+              {selectedJob.minSalary && selectedJob.maxSalary
+                ? `€${Number(
+                    selectedJob.minSalary
+                  ).toLocaleString()} – €${Number(
+                    selectedJob.maxSalary
+                  ).toLocaleString()}`
+                : "Negotiable"}{" "}
+              • 📍 {selectedJob.country}, {selectedJob.city},{" "}
+              {selectedJob.address}
+            </p>
 
             <p className="jobAddress">{selectedJob.address}</p>
 
@@ -312,26 +463,25 @@ const salaryPercent =
 
             <p className="jobDate">Posted: {selectedJob.date}</p>
 
-            <button className="primaryBtn">
-              Apply for this job
+            <button
+              className="primaryBtn"
+              disabled={hasApplied(selectedJob)}
+              onClick={() => handleApply(selectedJob)}
+            >
+              {hasApplied(selectedJob) ? "Applied" : "Apply for this job"}
             </button>
           </div>
         </div>
       )}
 
-      {/* ================= AUTH PROMPT (MODAL) ================= */}
       {showAuthPrompt && (
         <div className="authOverlay">
-
           <div className="authModal" onClick={(e) => e.stopPropagation()}>
             <h3>Login required</h3>
             <p>You must log in or sign up to view full job details and apply.</p>
 
             <div className="authActions">
-              <button
-                className="primaryBtn"
-                onClick={() => navigate("/login")}
-              >
+              <button className="primaryBtn" onClick={() => navigate("/login")}>
                 Log in
               </button>
 
@@ -349,6 +499,30 @@ const salaryPercent =
             >
               ✕
             </button>
+          </div>
+        </div>
+      )}
+
+      {noticeModal.show && (
+        <div className="authOverlay">
+          <div className="authModal" onClick={(e) => e.stopPropagation()}>
+            <h3>{noticeModal.title}</h3>
+            <p>{noticeModal.message}</p>
+
+            <div className="authActions">
+              <button
+                className="primaryBtn"
+                onClick={() =>
+                  setNoticeModal({
+                    show: false,
+                    title: "",
+                    message: "",
+                  })
+                }
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
       )}

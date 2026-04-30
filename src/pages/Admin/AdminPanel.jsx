@@ -21,13 +21,23 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, db, storage } from "../../firebase";
 
 const ADMIN_EMAIL = "jelenatanaskovicj@gmail.com";
+const COACH_MEMBERSHIP_PLANS = [
+  { id: "standard", name: "Standard", price: "50€" },
+  { id: "premium", name: "Premium", price: "130€" },
+  { id: "diamond", name: "Diamond", price: "220€" },
+];
 
+const ACADEMY_MEMBERSHIP_PLANS = [
+  { id: "access", name: "Access", price: "50€" },
+  { id: "member", name: "Member", price: "150€" },
+];
 export default function AdminPanel() {
   const [coaches, setCoaches] = useState([]);
   const [academies, setAcademies] = useState([]);
   const [activeCoaches, setActiveCoaches] = useState([]);
   const [activeAcademies, setActiveAcademies] = useState([]);
   const [blogPosts, setBlogPosts] = useState([]);
+  const [jobPostRequests, setJobPostRequests] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [loadingBlogs, setLoadingBlogs] = useState(false);
@@ -50,6 +60,12 @@ export default function AdminPanel() {
     confirmText: "",
     danger: false,
     onConfirm: null,
+  });
+
+  const [toast, setToast] = useState({
+    open: false,
+    type: "success",
+    message: "",
   });
 
   const [blogFile, setBlogFile] = useState(null);
@@ -75,11 +91,13 @@ export default function AdminPanel() {
       fetchRequests();
       fetchActiveProfiles();
       fetchBlogPosts();
+      fetchJobPostRequests();
     }
   }, [isAdmin]);
 
   const pendingCount = coaches.length + academies.length;
   const activeProfilesCount = activeCoaches.length + activeAcademies.length;
+  const jobPostRequestsCount = jobPostRequests.length;
 
   const expiringSoonProfiles = useMemo(() => {
     return [
@@ -92,8 +110,18 @@ export default function AdminPanel() {
   }, [activeCoaches, activeAcademies]);
 
   const extensionRequests = useMemo(() => {
-    return activeCoaches.filter((coach) => coach.extensionRequested === true);
-  }, [activeCoaches]);
+    return [
+      ...activeCoaches.map((profile) => ({ ...profile, type: "coach" })),
+      ...activeAcademies.map((profile) => ({ ...profile, type: "academy" })),
+    ].filter((profile) => profile.extensionRequested === true);
+  }, [activeCoaches, activeAcademies]);
+
+  const upgradeRequests = useMemo(() => {
+    return [
+      ...activeCoaches.map((profile) => ({ ...profile, type: "coach" })),
+      ...activeAcademies.map((profile) => ({ ...profile, type: "academy" })),
+    ].filter((profile) => profile.upgradeRequested === true);
+  }, [activeCoaches, activeAcademies]);
 
   const filteredActiveCoaches = useMemo(() => {
     if (profileFilter === "academies") return [];
@@ -109,12 +137,27 @@ export default function AdminPanel() {
       return activeCoaches.filter((coach) => coach.extensionRequested === true);
     }
 
+    if (profileFilter === "upgradeRequests") {
+      return activeCoaches.filter((coach) => coach.upgradeRequested === true);
+    }
+
     return activeCoaches;
   }, [activeCoaches, profileFilter]);
 
   const filteredActiveAcademies = useMemo(() => {
     if (profileFilter === "coaches") return [];
-    if (profileFilter === "extensionRequests") return [];
+
+    if (profileFilter === "extensionRequests") {
+      return activeAcademies.filter(
+        (academy) => academy.extensionRequested === true
+      );
+    }
+
+    if (profileFilter === "upgradeRequests") {
+      return activeAcademies.filter(
+        (academy) => academy.upgradeRequested === true
+      );
+    }
 
     if (profileFilter === "expiring") {
       return activeAcademies.filter((academy) => {
@@ -180,6 +223,20 @@ export default function AdminPanel() {
     });
   }
 
+  function showToast(message, type = "success") {
+    setToast({
+      open: true,
+      type,
+      message,
+    });
+
+    window.setTimeout(() => {
+      setToast((current) =>
+        current.message === message ? { ...current, open: false } : current
+      );
+    }, 2800);
+  }
+
   async function runConfirmAction() {
     if (!confirmModal.onConfirm) return;
     await confirmModal.onConfirm();
@@ -205,6 +262,13 @@ export default function AdminPanel() {
       profile.nationality,
       profile.residence,
       profile.address,
+      profile.membershipPlan,
+      profile.membership?.name,
+      profile.membership?.id,
+      profile.requestedExtensionPlan,
+      profile.requestedExtensionMembership?.name,
+      profile.requestedExtensionMembership?.id,
+      profile.requestedUpgradeTo,
     ]
       .map(normalizeText)
       .join(" ");
@@ -264,6 +328,56 @@ export default function AdminPanel() {
     return "statusActive";
   }
 
+  function getMembershipName(profile) {
+    return (
+      profile.membership?.name ||
+      profile.membershipPlan ||
+      profile.membership?.id ||
+      "Not set"
+    );
+  }
+
+  function getMembershipPlanId(profile) {
+    return (
+      profile.membershipPlan ||
+      profile.membership?.id ||
+      profile.membership?.name ||
+      "unknown"
+    );
+  }
+function getMembershipPlansByType(type) {
+  return type === "coach" ? COACH_MEMBERSHIP_PLANS : ACADEMY_MEMBERSHIP_PLANS;
+}
+
+function getMembershipPlanById(type, planId) {
+  return getMembershipPlansByType(type).find((plan) => plan.id === planId);
+}
+ function getRequestedUpgradeLabel(profile) {
+  return (
+    profile.requestedUpgradeMembership?.name ||
+    profile.requestedUpgradeTo ||
+    "Not set"
+  );
+}
+
+  function getRequestedExtensionLabel(profile) {
+    return (
+      profile.requestedExtensionMembership?.name ||
+      profile.requestedExtensionPlan ||
+      "Requested"
+    );
+  }
+
+  function getRequestedExtensionPlanId(profile) {
+    return (
+      profile.requestedExtensionMembership?.id ||
+      profile.requestedExtensionPlan ||
+      profile.membershipPlan ||
+      profile.membership?.id ||
+      "access"
+    );
+  }
+
   async function fetchRequests() {
     setLoading(true);
 
@@ -298,7 +412,7 @@ export default function AdminPanel() {
       );
     } catch (error) {
       console.error(error);
-      alert("Failed to load admin requests.");
+      showToast("Failed to load admin requests.", "error");
     } finally {
       setLoading(false);
     }
@@ -336,7 +450,7 @@ export default function AdminPanel() {
       );
     } catch (error) {
       console.error(error);
-      alert("Failed to load active profiles.");
+      showToast("Failed to load active profiles.", "error");
     }
   }
 
@@ -359,75 +473,311 @@ export default function AdminPanel() {
       );
     } catch (error) {
       console.error(error);
-      alert("Failed to load blog posts.");
+      showToast("Failed to load blog posts.", "error");
     } finally {
       setLoadingBlogs(false);
     }
   }
 
-  async function approveProfile(type, id) {
+  async function fetchJobPostRequests() {
     try {
-      const response = await fetch(
-        `https://email-api-vert-beta.vercel.app/api/approve-user?uid=${id}&type=${type}`
+      const jobRequestsQuery = query(
+        collection(db, "jobPostRequests"),
+        where("status", "==", "pending")
       );
 
-      if (!response.ok) throw new Error("Approve failed");
+      const snap = await getDocs(jobRequestsQuery);
 
-      const collectionName = type === "coach" ? "coaches" : "academies";
-
-      await updateDoc(doc(db, collectionName, id), {
-        approvalStatus: "approved",
-        profileVisible: true,
-        approvedAt: serverTimestamp(),
-        expiresAt: Timestamp.fromDate(getOneYearFromNow()),
-        extensionRequested: false,
-      });
-
-      await fetchRequests();
-      await fetchActiveProfiles();
-
-      alert("Profile approved.");
+      setJobPostRequests(
+        snap.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        }))
+      );
     } catch (error) {
       console.error(error);
-      alert("Failed to approve profile.");
+      showToast("Failed to load job post requests.", "error");
     }
   }
 
-  async function extendProfile(type, id, currentExpiresAt) {
+  async function approveJobPostRequest(request) {
     openConfirm({
-      title: "Extend profile",
-      message: "Extend this profile for another 1 year?",
-      confirmText: "Extend",
+      title: "Approve job post",
+      message: "Approve and publish this job post?",
+      confirmText: "Approve",
       onConfirm: async () => {
         try {
-          const collectionName = type === "coach" ? "coaches" : "academies";
+          await addDoc(collection(db, "academies", request.academyId, "jobs"), {
+            title: request.title || "",
+            minSalary: request.minSalary || "",
+            maxSalary: request.maxSalary || "",
+            benefits: request.benefits || "",
+            description: request.description || "",
+            date: request.date || "",
+            country: request.country || "",
+            city: request.city || "",
+            address: request.address || "",
 
-          const currentDate =
-            currentExpiresAt?.toDate && currentExpiresAt.toDate() > new Date()
-              ? currentExpiresAt.toDate()
-              : new Date();
-
-          currentDate.setFullYear(currentDate.getFullYear() + 1);
-
-          await updateDoc(doc(db, collectionName, id), {
-            approvalStatus: "approved",
-            profileVisible: true,
-            expiresAt: Timestamp.fromDate(currentDate),
-            extensionRequested: false,
-            extensionResolvedAt: serverTimestamp(),
+            academyId: request.academyId,
+            academyName: request.academyName || "",
+            academyEmail: request.academyEmail || "",
+            createdAt: serverTimestamp(),
+            approvedFromRequestId: request.id,
           });
 
-          await fetchActiveProfiles();
+          await updateDoc(doc(db, "jobPostRequests", request.id), {
+            status: "approved",
+            approvedAt: serverTimestamp(),
+          });
 
-          alert("Profile extended for 1 year.");
+          await fetchJobPostRequests();
+
+          showToast("Job post approved and published.");
         } catch (error) {
           console.error(error);
-          alert("Failed to extend profile.");
+          showToast("Failed to approve job post.", "error");
         }
       },
     });
   }
 
+  async function rejectJobPostRequest(requestId) {
+    openConfirm({
+      title: "Reject job post",
+      message: "Reject this job post request?",
+      confirmText: "Reject",
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await updateDoc(doc(db, "jobPostRequests", requestId), {
+            status: "rejected",
+            rejectedAt: serverTimestamp(),
+          });
+
+          await fetchJobPostRequests();
+
+          showToast("Job post request rejected.");
+        } catch (error) {
+          console.error(error);
+          showToast("Failed to reject job post request.", "error");
+        }
+      },
+    });
+  }
+
+  async function approveProfile(type, profile) {
+    try {
+      const response = await fetch(
+        `https://email-api-vert-beta.vercel.app/api/approve-user?uid=${profile.id}&type=${type}`
+      );
+
+      if (!response.ok) throw new Error("Approve failed");
+
+      const collectionName = type === "coach" ? "coaches" : "academies";
+      const selectedMembership =
+        getMembershipPlanId(profile) === "unknown"
+          ? "basic"
+          : getMembershipPlanId(profile);
+
+      await updateDoc(doc(db, collectionName, profile.id), {
+        approvalStatus: "approved",
+        profileVisible: true,
+        approvedAt: serverTimestamp(),
+        expiresAt: Timestamp.fromDate(getOneYearFromNow()),
+        membershipPlan: selectedMembership,
+      });
+
+      await fetchRequests();
+      await fetchActiveProfiles();
+
+      showToast("Profile approved.");
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to approve profile.", "error");
+    }
+  }
+
+ async function extendProfile(type, profile) {
+  const collectionName = type === "coach" ? "coaches" : "academies";
+
+  const requestedPlanId = getRequestedExtensionPlanId(profile);
+  const requestedPlanName = getRequestedExtensionLabel(profile);
+
+  const requestedMembership =
+    profile.requestedExtensionMembership || {
+      id: requestedPlanId,
+      name: requestedPlanName,
+      price: "Paid",
+    };
+
+  const currentPlanId = getMembershipPlanId(profile);
+  const isSamePlan = currentPlanId === requestedPlanId;
+
+  openConfirm({
+    title: "Extend profile",
+    message: isSamePlan
+      ? `Extend this profile for another 1 year with ${requestedPlanName} membership?`
+      : `Extend this profile for another 1 year. Current ${getMembershipName(
+          profile
+        )} membership stays active until expiry, then it will switch to ${requestedPlanName}.`,
+    confirmText: "Extend",
+    onConfirm: async () => {
+      try {
+        const oldExpiryDate =
+          profile.expiresAt?.toDate && profile.expiresAt.toDate() > new Date()
+            ? profile.expiresAt.toDate()
+            : new Date();
+
+        const newExpiryDate = new Date(oldExpiryDate);
+        newExpiryDate.setFullYear(newExpiryDate.getFullYear() + 1);
+
+        const updatePayload = {
+          approvalStatus: "approved",
+          profileVisible: true,
+          expiresAt: Timestamp.fromDate(newExpiryDate),
+
+          extensionRequested: false,
+          requestedExtensionPlan: null,
+          requestedExtensionMembership: null,
+          extensionResolvedAt: serverTimestamp(),
+        };
+
+        if (isSamePlan) {
+          updatePayload.previousMembershipPlan = currentPlanId;
+          updatePayload.membershipPlan = requestedPlanId;
+          updatePayload.membership = requestedMembership;
+
+          updatePayload.nextMembershipPlan = null;
+          updatePayload.nextMembership = null;
+          updatePayload.nextMembershipStartsAt = null;
+        } else {
+          updatePayload.nextMembershipPlan = requestedPlanId;
+          updatePayload.nextMembership = requestedMembership;
+          updatePayload.nextMembershipStartsAt = Timestamp.fromDate(oldExpiryDate);
+        }
+
+        await updateDoc(doc(db, collectionName, profile.id), updatePayload);
+
+        await fetchActiveProfiles();
+
+        showToast(
+          isSamePlan
+            ? "Profile extended for 1 year."
+            : "Profile extended. New membership will start after current one expires."
+        );
+      } catch (error) {
+        console.error(error);
+        showToast("Failed to extend profile.", "error");
+      }
+    },
+  });
+}
+  async function upgradeProfileMembership(type, profile) {
+    const fromPlan = getMembershipPlanId(profile);
+    const toPlan = profile.requestedUpgradeTo;
+
+if (!toPlan) {
+  showToast("No upgrade plan selected.", "error");
+  return;
+}
+const collectionName = type === "coach" ? "coaches" : "academies";
+
+const fromPlanName = getMembershipName(profile);
+const toPlanName = profile.requestedUpgradeMembership?.name || toPlan;
+
+openConfirm({
+  title: "Approve membership upgrade",
+  message: `Upgrade this profile from ${fromPlanName} to ${toPlanName}?`,
+      confirmText: "Upgrade",
+      onConfirm: async () => {
+        try {
+await updateDoc(doc(db, collectionName, profile.id), {
+  previousMembershipPlan: fromPlan,
+
+  membershipPlan: toPlan,
+  membership: {
+    id: toPlan,
+    name:
+      profile.requestedUpgradeMembership?.name || toPlan,
+    price:
+      profile.requestedUpgradeMembership?.price ||
+      profile.membership?.price ||
+      "Paid",
+  },
+
+  nextMembershipPlan: null,
+  nextMembership: null,
+  nextMembershipStartsAt: null,
+
+  upgradeRequested: false,
+  requestedUpgradeTo: null,
+  requestedUpgradeMembership: null, // 🔥 DODAJ OVO
+  upgradeResolvedAt: serverTimestamp(),
+});
+          await fetchActiveProfiles();
+
+          showToast("Membership upgraded.");
+        } catch (error) {
+          console.error(error);
+          showToast("Failed to upgrade membership.", "error");
+        }
+      },
+    });
+  }
+async function changeProfileMembership(type, profile, planId) {
+  const selectedPlan = getMembershipPlanById(type, planId);
+
+  if (!selectedPlan) {
+    showToast("Invalid membership plan selected.", "error");
+    return;
+  }
+
+  const collectionName = type === "coach" ? "coaches" : "academies";
+  const currentPlan = getMembershipName(profile);
+
+  openConfirm({
+    title: "Change membership",
+    message: `Change membership from ${currentPlan} to ${selectedPlan.name}?`,
+    confirmText: "Change",
+    onConfirm: async () => {
+      try {
+        await updateDoc(doc(db, collectionName, profile.id), {
+          previousMembershipPlan: getMembershipPlanId(profile),
+
+          membershipPlan: selectedPlan.id,
+          membership: {
+            id: selectedPlan.id,
+            name: selectedPlan.name,
+            price: selectedPlan.price,
+          },
+
+          // čistimo pending upgrade/extension da ne ostanu stari zahtevi
+          upgradeRequested: false,
+          requestedUpgradeTo: null,
+          requestedUpgradeMembership: null,
+
+          extensionRequested: false,
+          requestedExtensionPlan: null,
+          requestedExtensionMembership: null,
+
+          // čistimo future membership da ne pregazi ručnu promenu kasnije
+          nextMembershipPlan: null,
+          nextMembership: null,
+          nextMembershipStartsAt: null,
+
+          membershipChangedManuallyAt: serverTimestamp(),
+        });
+
+        await fetchActiveProfiles();
+
+        showToast(`Membership changed to ${selectedPlan.name}.`);
+      } catch (error) {
+        console.error(error);
+        showToast("Failed to change membership.", "error");
+      }
+    },
+  });
+}
   async function toggleProfileVisibility(type, id, currentVisible) {
     try {
       const collectionName = type === "coach" ? "coaches" : "academies";
@@ -438,10 +788,10 @@ export default function AdminPanel() {
 
       await fetchActiveProfiles();
 
-      alert(currentVisible ? "Profile hidden." : "Profile is now visible.");
+      showToast(currentVisible ? "Profile hidden." : "Profile is now visible.");
     } catch (error) {
       console.error(error);
-      alert("Failed to update profile visibility.");
+      showToast("Failed to update profile visibility.", "error");
     }
   }
 
@@ -461,10 +811,10 @@ export default function AdminPanel() {
 
           await fetchRequests();
 
-          alert("Profile rejected.");
+          showToast("Profile rejected.");
         } catch (error) {
           console.error(error);
-          alert("Failed to reject profile.");
+          showToast("Failed to reject profile.", "error");
         }
       },
     });
@@ -485,10 +835,10 @@ export default function AdminPanel() {
           await fetchRequests();
           await fetchActiveProfiles();
 
-          alert("Profile deleted.");
+          showToast("Profile deleted.");
         } catch (error) {
           console.error(error);
-          alert("Failed to delete profile.");
+          showToast("Failed to delete profile.", "error");
         }
       },
     });
@@ -504,10 +854,10 @@ export default function AdminPanel() {
         try {
           await deleteDoc(doc(db, "blogPosts", postId));
           setBlogPosts((prev) => prev.filter((post) => post.id !== postId));
-          alert("Blog post deleted.");
+          showToast("Blog post deleted.");
         } catch (error) {
           console.error(error);
-          alert("Failed to delete blog post.");
+          showToast("Failed to delete blog post.", "error");
         }
       },
     });
@@ -531,7 +881,7 @@ export default function AdminPanel() {
     const isVideo = file.type.startsWith("video/");
 
     if (!isImage && !isVideo) {
-      alert("Please select an image or video.");
+      showToast("Please select an image or video.", "error");
       return;
     }
 
@@ -565,7 +915,7 @@ export default function AdminPanel() {
     e.preventDefault();
 
     if (!blogForm.title || !blogForm.content) {
-      alert("Title and content are required.");
+      showToast("Title and content are required.", "error");
       return;
     }
 
@@ -595,10 +945,10 @@ export default function AdminPanel() {
 
       await fetchBlogPosts();
 
-      alert("Blog post created.");
+      showToast("Blog post created.");
     } catch (error) {
       console.error(error);
-      alert("Failed to create blog post.");
+      showToast("Failed to create blog post.", "error");
     } finally {
       setUploadingBlog(false);
     }
@@ -645,6 +995,7 @@ export default function AdminPanel() {
                 fetchRequests();
                 fetchActiveProfiles();
                 fetchBlogPosts();
+                fetchJobPostRequests();
               }}
             >
               Refresh
@@ -711,6 +1062,29 @@ export default function AdminPanel() {
           </button>
 
           <button
+            className="adminStatCard warningStatCard"
+            type="button"
+            onClick={() => {
+              setActiveTab("active");
+              setProfileFilter("upgradeRequests");
+            }}
+          >
+            <span>Upgrade requests</span>
+            <strong>{upgradeRequests.length}</strong>
+          </button>
+
+          <button
+            className={`adminStatCard ${
+              activeTab === "jobRequests" ? "activeStatCard" : ""
+            }`}
+            type="button"
+            onClick={() => setActiveTab("jobRequests")}
+          >
+            <span>Job requests</span>
+            <strong>{jobPostRequestsCount}</strong>
+          </button>
+
+          <button
             className={`adminStatCard ${
               activeTab === "blog" ? "activeStatCard" : ""
             }`}
@@ -740,6 +1114,14 @@ export default function AdminPanel() {
           </button>
 
           <button
+            className={activeTab === "jobRequests" ? "activeTab" : ""}
+            type="button"
+            onClick={() => setActiveTab("jobRequests")}
+          >
+            Job requests
+          </button>
+
+          <button
             className={activeTab === "blog" ? "activeTab" : ""}
             type="button"
             onClick={() => setActiveTab("blog")}
@@ -753,7 +1135,7 @@ export default function AdminPanel() {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by name, email, phone, city, region..."
+            placeholder="Search by name, email, phone, city, region, membership..."
           />
 
           {searchTerm && (
@@ -810,7 +1192,9 @@ export default function AdminPanel() {
                         {searchedCoaches.map((coach) => (
                           <div className="requestCard" key={coach.id}>
                             <div className="cardTopLine">
-                              <span className="typeBadge">Coach</span>
+                              <span className="typeBadge coachBadge">
+                                Coach
+                              </span>
                               <span>{formatDate(coach.createdAt)}</span>
                             </div>
 
@@ -819,13 +1203,21 @@ export default function AdminPanel() {
                             <p>
                               <strong>Email:</strong> {coach.email || "-"}
                             </p>
+
+                            <p>
+                              <strong>Membership:</strong>{" "}
+                              {getMembershipName(coach)}
+                            </p>
+
                             <p>
                               <strong>Phone:</strong> {coach.phone || "-"}
                             </p>
+
                             <p>
                               <strong>Nationality:</strong>{" "}
                               {coach.nationality || "-"}
                             </p>
+
                             <p>
                               <strong>Region:</strong> {coach.region || "-"}
                             </p>
@@ -834,36 +1226,28 @@ export default function AdminPanel() {
                               <button
                                 className="viewBtn"
                                 type="button"
-                                onClick={() =>
-                                  openProfileModal("coach", coach)
-                                }
+                                onClick={() => openProfileModal("coach", coach)}
                               >
                                 View profile
                               </button>
 
                               <button
                                 className="approveBtn"
-                                onClick={() =>
-                                  approveProfile("coach", coach.id)
-                                }
+                                onClick={() => approveProfile("coach", coach)}
                               >
                                 Approve
                               </button>
 
                               <button
                                 className="rejectBtn"
-                                onClick={() =>
-                                  rejectProfile("coach", coach.id)
-                                }
+                                onClick={() => rejectProfile("coach", coach.id)}
                               >
                                 Reject
                               </button>
 
                               <button
                                 className="rejectBtn deleteProfileBtn"
-                                onClick={() =>
-                                  deleteProfile("coach", coach.id)
-                                }
+                                onClick={() => deleteProfile("coach", coach.id)}
                               >
                                 Delete
                               </button>
@@ -900,15 +1284,24 @@ export default function AdminPanel() {
                               <strong>Contact:</strong>{" "}
                               {academy.contactName || "-"}
                             </p>
+
                             <p>
                               <strong>Email:</strong> {academy.email || "-"}
                             </p>
+
+                            <p>
+                              <strong>Membership:</strong>{" "}
+                              {getMembershipName(academy)}
+                            </p>
+
                             <p>
                               <strong>Phone:</strong> {academy.phone || "-"}
                             </p>
+
                             <p>
                               <strong>City:</strong> {academy.city || "-"}
                             </p>
+
                             <p>
                               <strong>Region:</strong> {academy.region || "-"}
                             </p>
@@ -927,7 +1320,7 @@ export default function AdminPanel() {
                               <button
                                 className="approveBtn"
                                 onClick={() =>
-                                  approveProfile("academy", academy.id)
+                                  approveProfile("academy", academy)
                                 }
                               >
                                 Approve
@@ -1008,12 +1401,23 @@ export default function AdminPanel() {
               >
                 Extension requests
               </button>
+
+              <button
+                className={
+                  profileFilter === "upgradeRequests" ? "activeFilter" : ""
+                }
+                type="button"
+                onClick={() => setProfileFilter("upgradeRequests")}
+              >
+                Upgrade requests
+              </button>
             </div>
 
             {(profileFilter === "all" ||
               profileFilter === "coaches" ||
               profileFilter === "expiring" ||
-              profileFilter === "extensionRequests") && (
+              profileFilter === "extensionRequests" ||
+              profileFilter === "upgradeRequests") && (
               <section className="adminSection profilesSection">
                 <h2>Active Coach Profiles ({searchedActiveCoaches.length})</h2>
 
@@ -1024,7 +1428,7 @@ export default function AdminPanel() {
                     {searchedActiveCoaches.map((coach) => (
                       <div className="requestCard" key={coach.id}>
                         <div className="cardTopLine">
-                          <span className="typeBadge">Coach</span>
+                          <span className="typeBadge coachBadge">Coach</span>
                           <span className={getStatusClass(coach.expiresAt)}>
                             {getProfileStatus(coach.expiresAt)}
                           </span>
@@ -1034,7 +1438,16 @@ export default function AdminPanel() {
 
                         {coach.extensionRequested && (
                           <p className="extensionRequestText">
-                            <strong>Extension request:</strong> Requested
+                            <strong>Extension request:</strong>{" "}
+                            {getRequestedExtensionLabel(coach)}
+                          </p>
+                        )}
+
+                        {coach.upgradeRequested && (
+                          <p className="extensionRequestText">
+                            <strong>Upgrade request:</strong>{" "}
+                            {getMembershipName(coach)} →{" "}
+                            {getRequestedUpgradeLabel(coach)}
                           </p>
                         )}
 
@@ -1042,6 +1455,26 @@ export default function AdminPanel() {
                           <strong>Email:</strong> {coach.email || "-"}
                         </p>
 
+                        <p>
+                          <strong>Membership:</strong>{" "}
+                          {getMembershipName(coach)}
+                        </p>
+<div className="manualMembershipBox">
+  <label>Change membership</label>
+
+  <select
+    value={getMembershipPlanId(coach)}
+    onChange={(e) =>
+      changeProfileMembership("coach", coach, e.target.value)
+    }
+  >
+    {COACH_MEMBERSHIP_PLANS.map((plan) => (
+      <option key={plan.id} value={plan.id}>
+        {plan.name} - {plan.price}
+      </option>
+    ))}
+  </select>
+</div>
                         <p>
                           <strong>Visible:</strong>{" "}
                           {coach.profileVisible === false
@@ -1086,16 +1519,21 @@ export default function AdminPanel() {
 
                           <button
                             className="extendBtn"
-                            onClick={() =>
-                              extendProfile(
-                                "coach",
-                                coach.id,
-                                coach.expiresAt
-                              )
-                            }
+                            onClick={() => extendProfile("coach", coach)}
                           >
                             Extend 1 year
                           </button>
+
+                          {coach.upgradeRequested && (
+                            <button
+                              className="extendBtn"
+                              onClick={() =>
+                                upgradeProfileMembership("coach", coach)
+                              }
+                            >
+                              Approve upgrade
+                            </button>
+                          )}
 
                           <button
                             className="rejectBtn deleteProfileBtn"
@@ -1113,7 +1551,9 @@ export default function AdminPanel() {
 
             {(profileFilter === "all" ||
               profileFilter === "academies" ||
-              profileFilter === "expiring") && (
+              profileFilter === "expiring" ||
+              profileFilter === "extensionRequests" ||
+              profileFilter === "upgradeRequests") && (
               <section className="adminSection profilesSection">
                 <h2>
                   Active Academy Profiles ({searchedActiveAcademies.length})
@@ -1138,9 +1578,51 @@ export default function AdminPanel() {
                           {academy.organisationName || "Unnamed academy"}
                         </h3>
 
+                        {academy.extensionRequested && (
+                          <p className="extensionRequestText">
+                            <strong>Extension request:</strong>{" "}
+                            {getRequestedExtensionLabel(academy)}
+                          </p>
+                        )}
+
+                        {academy.upgradeRequested && (
+                          <p className="extensionRequestText">
+                            <strong>Upgrade request:</strong>{" "}
+                            {getMembershipName(academy)} →{" "}
+                            {getRequestedUpgradeLabel(academy)}
+                          </p>
+                        )}
+
                         <p>
                           <strong>Email:</strong> {academy.email || "-"}
                         </p>
+
+                        <p>
+                          <strong>Membership:</strong>{" "}
+                          {getMembershipName(academy)}
+                        </p>
+<div className="manualMembershipBox">
+  <label>Change membership</label>
+
+  <select
+    value={getMembershipPlanId(academy)}
+    onChange={(e) =>
+      changeProfileMembership("academy", academy, e.target.value)
+    }
+  >
+    {ACADEMY_MEMBERSHIP_PLANS.map((plan) => (
+      <option key={plan.id} value={plan.id}>
+        {plan.name} - {plan.price}
+      </option>
+    ))}
+  </select>
+</div>
+                        {academy.previousMembershipPlan && (
+                          <p>
+                            <strong>Previous membership:</strong>{" "}
+                            {academy.previousMembershipPlan}
+                          </p>
+                        )}
 
                         <p>
                           <strong>Visible:</strong>{" "}
@@ -1188,16 +1670,21 @@ export default function AdminPanel() {
 
                           <button
                             className="extendBtn"
-                            onClick={() =>
-                              extendProfile(
-                                "academy",
-                                academy.id,
-                                academy.expiresAt
-                              )
-                            }
+                            onClick={() => extendProfile("academy", academy)}
                           >
                             Extend 1 year
                           </button>
+
+                          {academy.upgradeRequested && (
+                            <button
+                              className="extendBtn"
+                              onClick={() =>
+                                upgradeProfileMembership("academy", academy)
+                              }
+                            >
+                              Approve upgrade
+                            </button>
+                          )}
 
                           <button
                             className="rejectBtn deleteProfileBtn"
@@ -1214,6 +1701,99 @@ export default function AdminPanel() {
                 )}
               </section>
             )}
+          </>
+        )}
+
+        {activeTab === "jobRequests" && (
+          <>
+            <div className="adminDividerTitle">
+              Job post requests ({jobPostRequests.length})
+            </div>
+
+            <section className="adminSection requestsSection">
+              <h2>Pending Job Post Requests</h2>
+
+              {jobPostRequests.length === 0 ? (
+                <p className="emptyText">No pending job post requests.</p>
+              ) : (
+                <div className="requestGrid">
+                  {jobPostRequests.map((request) => (
+                    <div className="requestCard" key={request.id}>
+                      <div className="cardTopLine">
+                        <span className="typeBadge academyBadge">
+                          Job request
+                        </span>
+                        <span>{formatDate(request.createdAt)}</span>
+                      </div>
+
+                      <h3>{request.title || "Untitled job"}</h3>
+
+                      <p>
+                        <strong>Academy:</strong> {request.academyName || "-"}
+                      </p>
+
+                      <p>
+                        <strong>Email:</strong> {request.academyEmail || "-"}
+                      </p>
+
+                      <p>
+                        <strong>Membership:</strong>{" "}
+                        {request.membership?.name ||
+                          request.membershipPlan ||
+                          "-"}
+                      </p>
+
+                      <p>
+                        <strong>Location:</strong> {request.city || "-"},{" "}
+                        {request.country || "-"}
+                      </p>
+
+                      <p>
+                        <strong>Address:</strong> {request.address || "-"}
+                      </p>
+
+                      <p>
+                        <strong>Salary:</strong>{" "}
+                        {request.minSalary && request.maxSalary
+                          ? `€${request.minSalary} – €${request.maxSalary}`
+                          : "Negotiable"}
+                      </p>
+
+                      <p>
+                        <strong>Benefits:</strong> {request.benefits || "-"}
+                      </p>
+
+                      <p>
+                        <strong>Description:</strong>{" "}
+                        {request.description || "-"}
+                      </p>
+
+                      <p>
+                        <strong>Date:</strong> {request.date || "-"}
+                      </p>
+
+                      <div className="requestActions">
+                        <button
+                          className="approveBtn"
+                          type="button"
+                          onClick={() => approveJobPostRequest(request)}
+                        >
+                          Approve & publish
+                        </button>
+
+                        <button
+                          className="rejectBtn"
+                          type="button"
+                          onClick={() => rejectJobPostRequest(request.id)}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
           </>
         )}
 
@@ -1334,6 +1914,17 @@ export default function AdminPanel() {
           </>
         )}
 
+        {toast.open && (
+          <div
+            className={`adminToast ${
+              toast.type === "error" ? "errorToast" : ""
+            }`}
+          >
+            <span>{toast.type === "error" ? "!" : "✓"}</span>
+            <p>{toast.message}</p>
+          </div>
+        )}
+
         {confirmModal.open && (
           <div className="confirmModalOverlay" onClick={closeConfirm}>
             <div className="confirmModal" onClick={(e) => e.stopPropagation()}>
@@ -1390,37 +1981,63 @@ export default function AdminPanel() {
                     <p>
                       <strong>Email:</strong> {selectedProfile.email || "-"}
                     </p>
+
                     <p>
                       <strong>Phone:</strong> {selectedProfile.phone || "-"}
                     </p>
+
                     <p>
                       <strong>Age:</strong> {selectedProfile.age || "-"}
                     </p>
+
                     <p>
                       <strong>Nationality:</strong>{" "}
                       {selectedProfile.nationality || "-"}
                     </p>
+
                     <p>
                       <strong>Residence:</strong>{" "}
                       {selectedProfile.residence || "-"}
                     </p>
+
                     <p>
-                      <strong>Region:</strong> {selectedProfile.region || "-"}
+                      <strong>Region:</strong>{" "}
+                      {selectedProfile.region || "-"}
                     </p>
+
+                    <p>
+                      <strong>Membership:</strong>{" "}
+                      {getMembershipName(selectedProfile)}
+                    </p>
+
+                    <p>
+                      <strong>Extension request:</strong>{" "}
+                      {selectedProfile.extensionRequested
+                        ? getRequestedExtensionLabel(selectedProfile)
+                        : "No"}
+                    </p>
+
+                    <p>
+                      <strong>Upgrade request:</strong>{" "}
+                      {selectedProfile.upgradeRequested
+                        ? `${getMembershipName(
+                            selectedProfile
+                          )} → ${getRequestedUpgradeLabel(selectedProfile)}`
+                        : "No"}
+                    </p>
+
                     <p>
                       <strong>Visible:</strong>{" "}
                       {selectedProfile.profileVisible === false
                         ? "Hidden"
                         : "Visible"}
                     </p>
-                    <p>
-                      <strong>Extension request:</strong>{" "}
-                      {selectedProfile.extensionRequested ? "Requested" : "No"}
-                    </p>
+
                     <p>
                       <strong>Created:</strong>{" "}
                       {formatDate(selectedProfile.createdAt)}
                     </p>
+
                     <p>
                       <strong>Expires:</strong>{" "}
                       {formatDate(selectedProfile.expiresAt)}
@@ -1520,36 +2137,74 @@ export default function AdminPanel() {
                       <strong>Contact:</strong>{" "}
                       {selectedProfile.contactName || "-"}
                     </p>
+
                     <p>
                       <strong>Email:</strong> {selectedProfile.email || "-"}
                     </p>
+
                     <p>
                       <strong>Phone:</strong> {selectedProfile.phone || "-"}
                     </p>
+
                     <p>
                       <strong>Organisation:</strong>{" "}
                       {selectedProfile.organisationName || "-"}
                     </p>
+
                     <p>
                       <strong>Address:</strong>{" "}
                       {selectedProfile.address || "-"}
                     </p>
+
                     <p>
                       <strong>City:</strong> {selectedProfile.city || "-"}
                     </p>
+
                     <p>
-                      <strong>Region:</strong> {selectedProfile.region || "-"}
+                      <strong>Region:</strong>{" "}
+                      {selectedProfile.region || "-"}
                     </p>
+
+                    <p>
+                      <strong>Membership:</strong>{" "}
+                      {getMembershipName(selectedProfile)}
+                    </p>
+
+                    {selectedProfile.previousMembershipPlan && (
+                      <p>
+                        <strong>Previous membership:</strong>{" "}
+                        {selectedProfile.previousMembershipPlan}
+                      </p>
+                    )}
+
+                    <p>
+                      <strong>Extension request:</strong>{" "}
+                      {selectedProfile.extensionRequested
+                        ? getRequestedExtensionLabel(selectedProfile)
+                        : "No"}
+                    </p>
+
+                    <p>
+                      <strong>Upgrade request:</strong>{" "}
+                      {selectedProfile.upgradeRequested
+                        ? `${getMembershipName(
+                            selectedProfile
+                          )} → ${getRequestedUpgradeLabel(selectedProfile)}`
+                        : "No"}
+                    </p>
+
                     <p>
                       <strong>Visible:</strong>{" "}
                       {selectedProfile.profileVisible === false
                         ? "Hidden"
                         : "Visible"}
                     </p>
+
                     <p>
                       <strong>Created:</strong>{" "}
                       {formatDate(selectedProfile.createdAt)}
                     </p>
+
                     <p>
                       <strong>Expires:</strong>{" "}
                       {formatDate(selectedProfile.expiresAt)}

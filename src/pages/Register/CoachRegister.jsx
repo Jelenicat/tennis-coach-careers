@@ -3,9 +3,19 @@ import "./auth.css";
 import "react-phone-number-input/style.css";
 
 import Button from "../../components/ui/Button";
-import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
-import { createUserWithEmailAndPassword, deleteUser, signOut } from "firebase/auth";
+import PhoneInput, {
+  isValidPhoneNumber,
+  getCountryCallingCode,
+} from "react-phone-number-input";
+
+import {
+  createUserWithEmailAndPassword,
+  deleteUser,
+  signOut,
+} from "firebase/auth";
+
 import { doc, setDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
+
 import { auth, db } from "../../firebase";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { v4 as uuidv4 } from "uuid";
@@ -20,19 +30,22 @@ const coachMembershipPlans = [
     id: "standard",
     name: "Standard",
     price: "50€ / year",
-    description: "Public profile, 5 job applications per month, CV advice and video portfolio advice.",
+    description:
+      "Public profile, 5 job applications per month, CV advice and video portfolio advice.",
   },
   {
     id: "premium",
     name: "Premium",
     price: "130€ / year",
-    description: "Unlimited job applications, professional CV creation, video portfolio advice and negotiation guide.",
+    description:
+      "Unlimited job applications, professional CV creation, video portfolio advice and negotiation guide.",
   },
   {
     id: "diamond",
     name: "Diamond",
     price: "220€ / year",
-    description: "Full package with CV creation, video portfolio creation, negotiation guide and Instagram promotion.",
+    description:
+      "Full package with CV creation, video portfolio creation, negotiation guide and Instagram promotion.",
   },
 ];
 
@@ -239,6 +252,9 @@ export default function CoachRegister() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const [country, setCountry] = useState("RS");
+  const callingCode = country ? `+${getCountryCallingCode(country)}` : "";
+
   const [profilePreview, setProfilePreview] = useState(null);
   const [galleryItems, setGalleryItems] = useState([]);
 
@@ -333,6 +349,17 @@ export default function CoachRegister() {
       return;
     }
 
+    const selectedPlan = coachMembershipPlans.find(
+      (plan) => plan.id === form.membershipPlan
+    );
+
+    const membershipData = {
+      id: selectedPlan?.id || form.membershipPlan,
+      name: selectedPlan?.name || "",
+      price: selectedPlan?.price || "",
+      description: selectedPlan?.description || "",
+    };
+
     setLoading(true);
 
     let createdUser = null;
@@ -393,6 +420,7 @@ export default function CoachRegister() {
         recommendationText: form.recommendationText,
 
         membershipPlan: form.membershipPlan,
+        membership: membershipData,
         membershipStatus: "pending",
 
         role: "coach",
@@ -418,7 +446,9 @@ export default function CoachRegister() {
         residence: form.residence,
         region: form.region,
         certifications: form.certifications,
+
         membershipPlan: form.membershipPlan,
+        membership: membershipData,
       });
 
       await signOut(auth);
@@ -527,12 +557,16 @@ export default function CoachRegister() {
 
             <div className="phoneInputWrap">
               <div className="phoneField">
-                <span className="phonePrefix">+381</span>
+                <span className="phonePrefix">{callingCode}</span>
 
                 <PhoneInput
                   defaultCountry="RS"
+                  country={country}
                   placeholder="Phone number"
                   value={form.phone}
+                  onCountryChange={(value) => {
+                    if (value) setCountry(value);
+                  }}
                   onChange={(value) =>
                     setForm((prev) => ({
                       ...prev,

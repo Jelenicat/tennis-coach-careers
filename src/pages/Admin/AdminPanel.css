@@ -2,14 +2,11 @@
   min-height: 100vh;
   padding: 40px 20px;
   background:
-    linear-gradient(
-      to bottom,
-      rgba(5, 25, 40, 0.82),
-      rgba(5, 25, 40, 0.96)
-    ),
+    linear-gradient(to bottom, rgba(5, 25, 40, 0.82), rgba(5, 25, 40, 0.96)),
     url("/images/tennis-bg.webp");
   background-size: cover;
   background-position: center;
+  background-attachment: fixed;
   color: #fff;
 }
 
@@ -23,12 +20,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 34px;
+  margin-bottom: 28px;
 }
 
 .adminHeader h1 {
-  font-size: 36px;
   margin: 0 0 6px;
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: 1.05;
 }
 
 .adminHeader p {
@@ -36,15 +34,196 @@
   color: rgba(255, 255, 255, 0.72);
 }
 
+.adminHeaderActions,
+.adminTabs,
+.adminFilters,
+.adminSearchWrap,
+.requestActions,
+.confirmActions {
+  display: flex;
+  gap: 10px;
+}
+
+.adminHeaderActions,
+.adminTabs,
+.adminFilters,
+.requestActions {
+  flex-wrap: wrap;
+}
+
 .refreshBtn,
-.publishBtn {
+.publishBtn,
+.approveBtn,
+.rejectBtn,
+.extendBtn,
+.viewBtn,
+.hideBtn,
+.adminSearchWrap button,
+.cancelConfirmBtn,
+.confirmBtn,
+.dangerConfirmBtn {
   border: none;
   border-radius: 999px;
-  padding: 12px 20px;
-  background: #f6de59;
-  color: #0b2a3d;
+  padding: 11px 16px;
+  font-family: inherit;
   font-weight: 800;
   cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.refreshBtn,
+.publishBtn,
+.extendBtn,
+.viewBtn,
+.confirmBtn {
+  background: #f6de59;
+  color: #0b2a3d;
+}
+
+.approveBtn {
+  background: #16a34a;
+  color: #fff;
+}
+
+.rejectBtn,
+.dangerConfirmBtn {
+  background: #dc2626;
+  color: #fff;
+}
+
+.deleteProfileBtn {
+  background: #7f1d1d;
+  color: #fff;
+}
+
+.hideBtn,
+.adminSearchWrap button,
+.cancelConfirmBtn {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.refreshBtn:hover,
+.publishBtn:hover,
+.approveBtn:hover,
+.rejectBtn:hover,
+.extendBtn:hover,
+.viewBtn:hover,
+.hideBtn:hover,
+.adminSearchWrap button:hover,
+.cancelConfirmBtn:hover,
+.confirmBtn:hover,
+.dangerConfirmBtn:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.publishBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.adminStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 0 24px;
+}
+
+.adminStatCard {
+  min-height: 104px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 22px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: 0.25s ease;
+}
+
+.adminStatCard:hover,
+.activeStatCard {
+  background: rgba(246, 222, 89, 0.18);
+  border-color: rgba(246, 222, 89, 0.55);
+  transform: translateY(-2px);
+}
+
+.adminStatCard span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.adminStatCard strong {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.warningStatCard strong {
+  color: #f6de59;
+}
+
+.adminTabs,
+.adminFilters {
+  margin-bottom: 22px;
+}
+
+.adminTabs button,
+.adminFilters button {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.adminTabs button:hover,
+.adminFilters button:hover,
+.activeTab,
+.activeFilter {
+  background: #f6de59 !important;
+  color: #092033 !important;
+  border-color: #f6de59 !important;
+}
+
+.adminSearchWrap {
+  margin: 0 0 24px;
+}
+
+.adminSearchWrap input {
+  flex: 1;
+  min-width: 220px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 13px 18px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  outline: none;
+}
+
+.adminSearchWrap input::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.adminDividerTitle {
+  margin: 38px 0 18px;
+  padding: 12px 18px;
+  border-left: 5px solid #f6de59;
+  border-radius: 14px;
+  background: rgba(246, 222, 89, 0.12);
+  color: #f6de59;
+  font-size: 18px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 
 .adminSection {
@@ -62,6 +241,19 @@
   font-size: 24px;
 }
 
+.requestsSection {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.profilesSection {
+  border: 1px solid rgba(22, 163, 74, 0.28);
+}
+
+.blogAdminSection,
+.blogSection {
+  border: 1px solid rgba(246, 222, 89, 0.28);
+}
+
 .adminLoading,
 .emptyText {
   color: rgba(255, 255, 255, 0.72);
@@ -75,45 +267,119 @@
 
 .requestCard {
   padding: 20px;
-  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
   background: rgba(255, 255, 255, 0.2);
-  color: #0b2a3d;
+  color: #fff;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.16);
 }
 
 .requestCard h3 {
   margin: 0 0 14px;
   font-size: 20px;
+  line-height: 1.25;
 }
 
 .requestCard p {
   margin: 8px 0;
   font-size: 14px;
+  line-height: 1.45;
+}
+
+.cardTopLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.typeBadge,
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.typeBadge {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.academyBadge {
+  background: linear-gradient(
+    135deg,
+    rgba(56, 189, 248, 0.35),
+    rgba(21, 150, 210, 0.25)
+  );
+  color: #ffffff;
+  border: 1px solid rgba(125, 211, 252, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+.coachBadge {
+  background: linear-gradient(
+    135deg,
+    rgb(245, 232, 6, 0.5),
+    rgb(245, 232, 56,0.7)
+  );
+  color: #fbfbfb;
+  border: 1px solid rgba(253, 224, 71, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+.blogBadge {
+  background: rgba(147, 51, 234, 0.14);
+  color: #6b21a8;
+}
+
+.statusActive,
+.statusSoon,
+.statusExpired,
+.statusNeutral {
+  font-weight: 900;
+}
+
+.statusActive {
+  color: #86efac;
+}
+
+.statusSoon {
+  color: #f6de59;
+}
+
+.statusExpired {
+  color: #b91c1c;
+}
+
+.statusNeutral {
+   color: rgba(255, 255, 255, 0.65);
+}
+
+.extensionRequestText {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(246, 222, 89, 0.24);
+  color: #7c5c00;
+  font-weight: 800;
 }
 
 .requestActions {
-  display: flex;
-  gap: 10px;
   margin-top: 18px;
 }
 
-.approveBtn,
-.rejectBtn {
+.requestActions button,
+.profileActions button {
   flex: 1;
-  border: none;
-  border-radius: 999px;
-  padding: 11px 14px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.approveBtn {
-  background: #16a34a;
-  color: #fff;
-}
-
-.rejectBtn {
-  background: #dc2626;
-  color: #fff;
+  min-width: 126px;
 }
 
 .blogForm {
@@ -128,34 +394,17 @@
   border: none;
   border-radius: 16px;
   padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0b2a3d;
   font-family: inherit;
   font-size: 14px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #0b2a3d;
+  outline: none;
 }
 
 .blogForm textarea {
   resize: vertical;
 }
 
-.publishBtn {
-  align-self: flex-start;
-}
-
-@media (max-width: 800px) {
-  .adminHeader {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .requestGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .adminSection {
-    padding: 20px;
-  }
-}
 .blogForm input[type="file"] {
   background: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.85);
@@ -163,126 +412,105 @@
   cursor: pointer;
 }
 
-.publishBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.publishBtn {
+  align-self: flex-start;
 }
-.statusBadge {
+
+.adminToast {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(420px, calc(100vw - 40px));
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #ecfdf5;
+  color: #065f46;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  animation: adminToastIn 0.22s ease both;
+}
+
+.adminToast span {
   display: inline-flex;
-  margin-top: 6px;
-  padding: 7px 12px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
-  font-size: 13px;
+  background: #10b981;
+  color: #fff;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.adminToast p {
+  margin: 0;
   font-weight: 800;
+  line-height: 1.35;
 }
 
-.statusActive {
-  background: rgba(22, 163, 74, 0.16);
-  color: #166534;
-}
-
-.statusSoon {
-  background: rgba(246, 222, 89, 0.28);
-  color: #7c5c00;
-}
-
-.statusExpired {
-  background: rgba(220, 38, 38, 0.16);
+.errorToast {
+  background: #fef2f2;
   color: #991b1b;
 }
 
-.deleteProfileBtn {
-  background: #7f1d1d;
-  color: #fff;
+.errorToast span {
+  background: #ef4444;
 }
 
-.requestActions.threeButtons {
-  flex-wrap: wrap;
+@keyframes adminToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.requestActions.threeButtons button {
-  min-width: 120px;
-}
-.adminHeaderActions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.adminDividerTitle {
-  margin: 44px 0 18px;
-  padding: 12px 18px;
-  border-left: 5px solid #f6de59;
-  border-radius: 14px;
-  background: rgba(246, 222, 89, 0.12);
-  color: #f6de59;
-  font-size: 18px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-}
-
-.blogAdminSection {
-  border: 1px solid rgba(246, 222, 89, 0.28);
-}
-
-.profilesSection {
-  border: 1px solid rgba(22, 163, 74, 0.28);
-}
-
-.requestsSection {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-}
-
-.profileActions {
-  flex-wrap: wrap;
-}
-
-.extendBtn {
-  flex: 1;
-  border: none;
-  border-radius: 999px;
-  padding: 11px 14px;
-  font-weight: 800;
-  cursor: pointer;
-  background: #f6de59;
-  color: #0b2a3d;
-}
-
-.deleteProfileBtn {
-  background: #7f1d1d;
-  color: #fff;
-}
-
-.requestActions.threeButtons {
-  flex-wrap: wrap;
-}
-
-.requestActions.threeButtons button {
-  min-width: 120px;
-}
-.viewBtn {
-  flex: 1;
-  border: none;
-  border-radius: 999px;
-  padding: 11px 14px;
-  font-weight: 800;
-  cursor: pointer;
-  background: #f6de59;
-  color: #0b2a3d;
-}
-
+.confirmModalOverlay,
 .profileModalOverlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(0, 0, 0, 0.68);
-  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   overflow-y: auto;
+  background: rgba(0, 0, 0, 0.66);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.confirmModal {
+  width: min(440px, 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 24px;
+  padding: 26px;
+  background: #082033;
+  color: #fff;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+
+.confirmModal h2 {
+  margin: 0 0 10px;
+  font-size: 24px;
+}
+
+.confirmModal p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.5;
+}
+
+.confirmActions {
+  justify-content: flex-end;
+  margin-top: 24px;
 }
 
 .profileModal {
@@ -293,12 +521,7 @@
   overflow-y: auto;
   border-radius: 28px;
   padding: 34px;
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.3),
-      rgba(240, 246, 250, 0.3)
-    );
+  background: linear-gradient(to bottom, #fff, #eef5f8);
   color: #0b2a3d;
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
 }
@@ -306,13 +529,14 @@
 .modalCloseBtn {
   position: sticky;
   top: 0;
+  z-index: 2;
   margin-left: auto;
   display: flex;
-  border: none;
-  width: 38px;
-  height: 38px;
   align-items: center;
   justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: none;
   border-radius: 999px;
   background: #dc2626;
   color: #fff;
@@ -408,6 +632,31 @@
   border-radius: 16px;
 }
 
+@media (max-width: 900px) {
+  .adminStatsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .adminPage {
+    padding: 28px 14px;
+  }
+
+  .adminHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .requestGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .adminSection {
+    padding: 20px;
+  }
+}
+
 @media (max-width: 700px) {
   .profileModal {
     padding: 22px;
@@ -418,143 +667,13 @@
     align-items: flex-start;
   }
 
-  .profileModalGrid {
-    grid-template-columns: 1fr;
-  }
-
+  .profileModalGrid,
   .modalGallery {
     grid-template-columns: 1fr;
   }
 
   .profileModalHeader h2 {
     font-size: 28px;
-  }
-}
-.adminStatsGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  margin: 0 0 26px;
-}
-
-.adminStatCard {
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  border-radius: 22px;
-  padding: 18px;
-  text-align: left;
-  cursor: pointer;
-  backdrop-filter: blur(12px);
-  transition: 0.25s ease;
-}
-
-.adminStatCard:hover,
-.activeStatCard {
-  background: rgba(246, 222, 89, 0.18);
-  border-color: rgba(246, 222, 89, 0.55);
-  transform: translateY(-2px);
-}
-
-.adminStatCard span {
-  display: block;
-  font-size: 13px;
-  opacity: 0.75;
-  margin-bottom: 8px;
-}
-
-.adminStatCard strong {
-  font-size: 34px;
-  line-height: 1;
-}
-
-.warningStatCard strong {
-  color: #f6de59;
-}
-
-.adminTabs,
-.adminFilters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 22px;
-}
-
-.adminTabs button,
-.adminFilters button {
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  border-radius: 999px;
-  padding: 10px 16px;
-  cursor: pointer;
-  transition: 0.25s ease;
-}
-
-.adminTabs button:hover,
-.adminFilters button:hover,
-.activeTab,
-.activeFilter {
-  background: #f6de59 !important;
-  color: #092033 !important;
-  border-color: #f6de59 !important;
-}
-
-.cardTopLine {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.typeBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  padding: 5px 10px;
-  background: rgba(246, 222, 89, 0.16);
-  color: #f6de59;
-  font-weight: 700;
-  font-size: 12px;
-}
-
-.academyBadge {
-  background: rgba(125, 211, 252, 0.16);
-  color: #7dd3fc;
-}
-
-.blogBadge {
-  background: rgba(216, 180, 254, 0.16);
-  color: #d8b4fe;
-}
-
-.statusActive {
-  color: #86efac;
-  font-weight: 700;
-}
-
-.statusSoon {
-  color: #f6de59;
-  font-weight: 700;
-}
-
-.statusExpired {
-  color: #fca5a5;
-  font-weight: 700;
-}
-
-.statusNeutral {
-  color: rgba(255, 255, 255, 0.65);
-  font-weight: 700;
-}
-
-@media (max-width: 900px) {
-  .adminStatsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -566,109 +685,9 @@
   .adminStatCard strong {
     font-size: 28px;
   }
-}
-.adminSearchWrap {
-  display: flex;
-  gap: 10px;
-  margin: 0 0 24px;
-}
 
-.adminSearchWrap input {
-  flex: 1;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border-radius: 999px;
-  padding: 13px 18px;
-  outline: none;
-}
-
-.adminSearchWrap input::placeholder {
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.adminSearchWrap button,
-.hideBtn {
-  border: none;
-  border-radius: 999px;
-  padding: 11px 16px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  cursor: pointer;
-}
-
-.hideBtn:hover,
-.adminSearchWrap button:hover {
-  background: rgba(255, 255, 255, 0.24);
-}
-
-.confirmModalOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(0, 0, 0, 0.62);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  backdrop-filter: blur(6px);
-}
-
-.confirmModal {
-  width: min(440px, 100%);
-  border-radius: 24px;
-  padding: 26px;
-  background: #082033;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
-}
-
-.confirmModal h2 {
-  margin: 0 0 10px;
-  font-size: 24px;
-}
-
-.confirmModal p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.72);
-  line-height: 1.5;
-}
-
-.confirmActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 24px;
-}
-
-.cancelConfirmBtn,
-.confirmBtn,
-.dangerConfirmBtn {
-  border: none;
-  border-radius: 999px;
-  padding: 11px 18px;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.cancelConfirmBtn {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-}
-
-.confirmBtn {
-  background: #f6de59;
-  color: #082033;
-}
-
-.dangerConfirmBtn {
-  background: #ef4444;
-  color: #fff;
-}
-
-@media (max-width: 560px) {
-  .adminSearchWrap {
+  .adminSearchWrap,
+  .confirmActions {
     flex-direction: column;
   }
 
@@ -682,7 +701,38 @@
     width: 100%;
   }
 }
-.extensionRequestText {
-  color: #f6de59;
+
+.manualMembershipBox {
+  margin: 12px 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.manualMembershipBox label {
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.72);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.manualMembershipBox select {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  outline: none;
   font-weight: 700;
+}
+
+.manualMembershipBox select:focus {
+  border-color: rgba(246, 222, 89, 0.8);
+  box-shadow: 0 0 0 3px rgba(246, 222, 89, 0.18);
+}
+
+.manualMembershipBox option {
+  color: #111;
 }

@@ -28,8 +28,36 @@ export default function CoachProfile() {
   const [newGalleryImages, setNewGalleryImages] = useState([]);
   const [authUser, setAuthUser] = useState(undefined);
   const [deletedGalleryImages, setDeletedGalleryImages] = useState([]);
-
+  const [selectedExtensionPlan, setSelectedExtensionPlan] = useState("");
+const [toast, setToast] = useState({
+  open: false,
+  type: "success",
+  message: "",
+});
+const [successModal, setSuccessModal] = useState({
+  show: false,
+  title: "",
+  message: "",
+});
   const GALLERY_MAX = 2;
+
+  const MEMBERSHIP_PLANS = [
+    {
+      id: "standard",
+      name: "Standard",
+      price: "50€",
+    },
+    {
+      id: "diamond",
+      name: "Diamond",
+      price: "220€",
+    },
+    {
+      id: "premium",
+      name: "Premium",
+      price: "130€",
+    },
+  ];
 
   const isOwner = authUser?.uid === id && authUser?.role === "coach";
 
@@ -74,12 +102,34 @@ export default function CoachProfile() {
 
   useEffect(() => {
     async function fetchCoach() {
-      const snap = await getDoc(doc(db, "coaches", id));
+      const refDoc = doc(db, "coaches", id);
+      const snap = await getDoc(refDoc);
 
-      if (snap.exists()) {
-        setCoach(snap.data());
-        setFormData(snap.data());
+      if (!snap.exists()) return;
+
+      let data = snap.data();
+      const now = new Date();
+
+      if (
+        data.nextMembershipPlan &&
+        data.nextMembershipStartsAt &&
+        data.nextMembershipStartsAt.toDate() <= now
+      ) {
+        await updateDoc(refDoc, {
+          membershipPlan: data.nextMembershipPlan,
+          membership: data.nextMembership,
+
+          nextMembershipPlan: null,
+          nextMembership: null,
+          nextMembershipStartsAt: null,
+        });
+
+        const updatedSnap = await getDoc(refDoc);
+        data = updatedSnap.data();
       }
+
+      setCoach(data);
+      setFormData(data);
     }
 
     fetchCoach();
@@ -131,30 +181,135 @@ export default function CoachProfile() {
     return date > new Date();
   }
 
+  function getCurrentMembershipId() {
+    return (
+      coach?.membership?.id ||
+      coach?.membershipPlan ||
+      "standard"
+    )
+      .toString()
+      .toLowerCase();
+  }
+function getUpgradeOptions() {
+  const current = getCurrentMembershipId();
+
+  if (current === "standard") return ["premium", "diamond"];
+  if (current === "premium") return ["diamond"];
+
+  return [];
+}
+
+function getPlanById(planId) {
+  return MEMBERSHIP_PLANS.find((plan) => plan.id === planId);
+}
   async function requestExtension() {
     try {
+      const currentMembershipId = getCurrentMembershipId();
+      const planId = selectedExtensionPlan || currentMembershipId;
+
+      const selectedPlan = MEMBERSHIP_PLANS.find((plan) => plan.id === planId);
+
+      if (!selectedPlan) {
+      showToast("Please select membership plan.", "error");
+        return;
+      }
+
       await updateDoc(doc(db, "coaches", id), {
         extensionRequested: true,
         extensionRequestedAt: serverTimestamp(),
+
+        requestedExtensionPlan: selectedPlan.id,
+        requestedExtensionMembership: {
+          id: selectedPlan.id,
+          name: selectedPlan.name,
+          price: selectedPlan.price,
+        },
+
+        previousMembershipPlan: currentMembershipId,
+        previousMembership: coach.membership || null,
       });
 
       setCoach((prev) => ({
         ...prev,
         extensionRequested: true,
+        requestedExtensionPlan: selectedPlan.id,
+        requestedExtensionMembership: {
+          id: selectedPlan.id,
+          name: selectedPlan.name,
+          price: selectedPlan.price,
+        },
       }));
 
       setFormData((prev) => ({
         ...prev,
         extensionRequested: true,
+        requestedExtensionPlan: selectedPlan.id,
+        requestedExtensionMembership: {
+          id: selectedPlan.id,
+          name: selectedPlan.name,
+          price: selectedPlan.price,
+        },
       }));
 
-      alert("Extension request sent.");
+   showToast(`Extension request sent.`);
+showSuccessModal(
+  "Request sent",
+  `Your request for ${selectedPlan.name} has been submitted successfully.`
+);
     } catch (err) {
       console.error(err);
-      alert("Failed to send extension request.");
+  showToast("Failed to send extension request.", "error");
     }
   }
+async function requestUpgrade(planId) {
+  try {
+    const targetPlan = getPlanById(planId);
 
+    if (!targetPlan) return;
+
+    await updateDoc(doc(db, "coaches", id), {
+      upgradeRequested: true,
+      upgradeRequestedAt: serverTimestamp(),
+      requestedUpgradeTo: targetPlan.id,
+      requestedUpgradeMembership: {
+        id: targetPlan.id,
+        name: targetPlan.name,
+        price: targetPlan.price,
+      },
+    });
+
+    setCoach((prev) => ({
+      ...prev,
+      upgradeRequested: true,
+      requestedUpgradeTo: targetPlan.id,
+      requestedUpgradeMembership: {
+        id: targetPlan.id,
+        name: targetPlan.name,
+        price: targetPlan.price,
+      },
+    }));
+
+    setFormData((prev) => ({
+      ...prev,
+      upgradeRequested: true,
+      requestedUpgradeTo: targetPlan.id,
+      requestedUpgradeMembership: {
+        id: targetPlan.id,
+        name: targetPlan.name,
+        price: targetPlan.price,
+      },
+    }));
+
+showToast(`Upgrade request sent.`);
+showSuccessModal(
+  "Upgrade requested",
+  `Your request to upgrade to ${targetPlan.name} has been sent.`
+);
+  } catch (err) {
+    console.error(err);
+  showToast("Failed to send upgrade request.", "error");
+  }
+}
   async function handleSave() {
     const storage = getStorage();
     let updatedData = { ...formData };
@@ -178,7 +333,10 @@ export default function CoachProfile() {
 
       for (let i = 0; i < newGalleryImages.length; i++) {
         const img = newGalleryImages[i];
-        const imgRef = ref(storage, `coachProfiles/${id}/gallery_${Date.now()}_${i}`);
+        const imgRef = ref(
+          storage,
+          `coachProfiles/${id}/gallery_${Date.now()}_${i}`
+        );
 
         await uploadBytes(imgRef, img);
         const url = await getDownloadURL(imgRef);
@@ -260,7 +418,24 @@ export default function CoachProfile() {
       </div>
     );
   }
+function showToast(message, type = "success") {
+  setToast({
+    open: true,
+    type,
+    message,
+  });
 
+  setTimeout(() => {
+    setToast((prev) => ({ ...prev, open: false }));
+  }, 3000);
+}
+function showSuccessModal(title, message) {
+  setSuccessModal({
+    show: true,
+    title,
+    message,
+  });
+}
   return (
     <div
       className="coachProfilePage"
@@ -324,6 +499,7 @@ export default function CoachProfile() {
                       onChange={handleChange}
                       placeholder="Nationality"
                     />
+
                     <input
                       className="inputHero small"
                       name="residence"
@@ -331,6 +507,7 @@ export default function CoachProfile() {
                       onChange={handleChange}
                       placeholder="Residence"
                     />
+
                     <input
                       className="inputHero small"
                       name="age"
@@ -359,12 +536,18 @@ export default function CoachProfile() {
                   <p className="regionLine">
                     <strong>Region:</strong> {coach.region || "-"}
                   </p>
+                  <p className="regionLine">
+  <strong>Email:</strong> {coach.email || "-"}
+</p>
                 </>
               )}
 
               {isOwner && !editMode && (
                 <div className="heroActions">
-                  <button className="primaryBtn" onClick={() => navigate("/jobs")}>
+                  <button
+                    className="primaryBtn"
+                    onClick={() => navigate("/jobs")}
+                  >
                     View Available Jobs
                   </button>
 
@@ -389,6 +572,7 @@ export default function CoachProfile() {
                   <button className="primaryBtn" onClick={handleSave}>
                     Save
                   </button>
+
                   <button className="secondaryBtn" onClick={handleCancel}>
                     Cancel
                   </button>
@@ -444,7 +628,9 @@ export default function CoachProfile() {
                   <div
                     key={`new-${i}`}
                     className="experienceItem"
-                    style={{ backgroundImage: `url(${URL.createObjectURL(img)})` }}
+                    style={{
+                      backgroundImage: `url(${URL.createObjectURL(img)})`,
+                    }}
                   >
                     <button
                       className="removeExperienceBtn"
@@ -481,6 +667,15 @@ export default function CoachProfile() {
             <h3>Profile validity</h3>
 
             <p>
+              <strong>Membership:</strong>{" "}
+              {coach.membership?.name || coach.membershipPlan || "Not set"}
+            </p>
+
+            <p>
+              <strong>Price:</strong> {coach.membership?.price || "-"}
+            </p>
+
+            <p>
               <strong>Valid until:</strong> {formatProfileDate(coach.expiresAt)}
             </p>
 
@@ -489,17 +684,73 @@ export default function CoachProfile() {
               {isProfileActive(coach.expiresAt) ? "Active" : "Expired"}
             </p>
 
-            {isOwner && (
-              <button
-                className="primaryBtn"
-                onClick={requestExtension}
-                disabled={coach.extensionRequested}
-              >
-                {coach.extensionRequested
-                  ? "Extension requested"
-                  : "Request extension"}
-              </button>
+            {coach.nextMembershipPlan && (
+              <p className="muted">
+                <strong>Next membership:</strong>{" "}
+                {coach.nextMembership?.name || coach.nextMembershipPlan}
+              </p>
             )}
+
+            {isOwner && (
+              <div className="extensionBox">
+                <label className="extensionLabel">
+                  Choose membership for extension
+                </label>
+
+                <select
+                  className="extensionSelect"
+                  value={selectedExtensionPlan || getCurrentMembershipId()}
+                  onChange={(e) => setSelectedExtensionPlan(e.target.value)}
+                  disabled={coach.extensionRequested}
+                >
+                  {MEMBERSHIP_PLANS.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} - {plan.price}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  className="primaryBtn"
+                  onClick={requestExtension}
+                  disabled={coach.extensionRequested}
+                >
+                  {coach.extensionRequested
+                    ? "Extension requested"
+                    : "Request extension"}
+                </button>
+
+                {coach.extensionRequested &&
+                  coach.requestedExtensionMembership && (
+                    <p className="muted">
+                      Requested extension:{" "}
+                      <strong>{coach.requestedExtensionMembership.name}</strong>
+                    </p>
+                  )}
+              </div>
+            )}
+{isOwner && getUpgradeOptions().length > 0 && (
+  <div className="upgradeBox">
+    <label className="extensionLabel">Upgrade membership</label>
+
+    {getUpgradeOptions().map((planId) => {
+      const plan = getPlanById(planId);
+
+      return (
+        <button
+          key={planId}
+          className="primaryBtn upgradeBtn"
+          onClick={() => requestUpgrade(planId)}
+          disabled={coach.upgradeRequested}
+        >
+          {coach.upgradeRequested && coach.requestedUpgradeTo === planId
+            ? "Upgrade requested"
+            : `Upgrade to ${plan.name}`}
+        </button>
+      );
+    })}
+  </div>
+)}
           </div>
         </div>
 
@@ -536,6 +787,7 @@ export default function CoachProfile() {
                   onChange={handleChange}
                   placeholder="Playing video URL"
                 />
+
                 <input
                   className="input"
                   name="coachingVideo"
@@ -589,6 +841,7 @@ export default function CoachProfile() {
                   onChange={handleChange}
                   placeholder="Recommender name"
                 />
+
                 <textarea
                   className="textarea"
                   name="recommendationText"
@@ -629,6 +882,35 @@ export default function CoachProfile() {
           </div>
         </div>
       )}
+      {toast.open && (
+  <div className={`toast ${toast.type === "error" ? "errorToast" : ""}`}>
+    <span>{toast.type === "error" ? "!" : "✓"}</span>
+    <p>{toast.message}</p>
+  </div>
+)}
+{successModal.show && (
+  <div
+    className="modalOverlay"
+    onClick={() => setSuccessModal((prev) => ({ ...prev, show: false }))}
+  >
+    <div
+      className="successModal"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3>{successModal.title}</h3>
+      <p>{successModal.message}</p>
+
+      <button
+        className="primaryBtn"
+        onClick={() =>
+          setSuccessModal((prev) => ({ ...prev, show: false }))
+        }
+      >
+        OK
+      </button>
+    </div>
+  </div>
+)}
     </div>
   );
 }
