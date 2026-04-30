@@ -614,7 +614,9 @@ function getMembershipPlanById(type, planId) {
   const isSamePlan = currentPlanId === requestedPlanId;
 
   openConfirm({
-    title: "Extend profile",
+   title: profile.extensionRequested
+  ? "Approve extension request"
+  : "Extend profile",
     message: isSamePlan
       ? `Extend this profile for another 1 year with ${requestedPlanName} membership?`
       : `Extend this profile for another 1 year. Current ${getMembershipName(

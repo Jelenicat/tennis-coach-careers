@@ -12,6 +12,26 @@ import {
 } from "firebase/storage";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 
+const GALLERY_MAX = 2;
+
+const MEMBERSHIP_PLANS = [
+  {
+    id: "standard",
+    name: "Standard",
+    price: "50€",
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    price: "130€",
+  },
+  {
+    id: "diamond",
+    name: "Diamond",
+    price: "220€",
+  },
+];
+
 export default function CoachProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -26,38 +46,22 @@ export default function CoachProfile() {
 
   const [newProfileImage, setNewProfileImage] = useState(null);
   const [newGalleryImages, setNewGalleryImages] = useState([]);
-  const [authUser, setAuthUser] = useState(undefined);
   const [deletedGalleryImages, setDeletedGalleryImages] = useState([]);
-  const [selectedExtensionPlan, setSelectedExtensionPlan] = useState("");
-const [toast, setToast] = useState({
-  open: false,
-  type: "success",
-  message: "",
-});
-const [successModal, setSuccessModal] = useState({
-  show: false,
-  title: "",
-  message: "",
-});
-  const GALLERY_MAX = 2;
+  const [authUser, setAuthUser] = useState(undefined);
 
-  const MEMBERSHIP_PLANS = [
-    {
-      id: "standard",
-      name: "Standard",
-      price: "50€",
-    },
-    {
-      id: "diamond",
-      name: "Diamond",
-      price: "220€",
-    },
-    {
-      id: "premium",
-      name: "Premium",
-      price: "130€",
-    },
-  ];
+  const [selectedExtensionPlan, setSelectedExtensionPlan] = useState("");
+
+  const [toast, setToast] = useState({
+    open: false,
+    type: "success",
+    message: "",
+  });
+
+  const [successModal, setSuccessModal] = useState({
+    show: false,
+    title: "",
+    message: "",
+  });
 
   const isOwner = authUser?.uid === id && authUser?.role === "coach";
 
@@ -136,8 +140,32 @@ const [successModal, setSuccessModal] = useState({
   }, [id]);
 
   useEffect(() => {
-    if (!isOwner && editMode) setEditMode(false);
+    if (!isOwner && editMode) {
+      setEditMode(false);
+    }
   }, [isOwner, editMode]);
+
+  function showToast(message, type = "success") {
+    setToast({
+      open: true,
+      type,
+      message,
+    });
+
+    window.setTimeout(() => {
+      setToast((current) =>
+        current.message === message ? { ...current, open: false } : current
+      );
+    }, 3000);
+  }
+
+  function showSuccessModal(title, message) {
+    setSuccessModal({
+      show: true,
+      title,
+      message,
+    });
+  }
 
   async function handleLogout() {
     await signOut(auth);
@@ -146,7 +174,11 @@ const [successModal, setSuccessModal] = useState({
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   }
 
   function formatProfileDate(value) {
@@ -190,27 +222,28 @@ const [successModal, setSuccessModal] = useState({
       .toString()
       .toLowerCase();
   }
-function getUpgradeOptions() {
-  const current = getCurrentMembershipId();
 
-  if (current === "standard") return ["premium", "diamond"];
-  if (current === "premium") return ["diamond"];
+  function getUpgradeOptions() {
+    const current = getCurrentMembershipId();
 
-  return [];
-}
+    if (current === "standard") return ["premium", "diamond"];
+    if (current === "premium") return ["diamond"];
 
-function getPlanById(planId) {
-  return MEMBERSHIP_PLANS.find((plan) => plan.id === planId);
-}
+    return [];
+  }
+
+  function getPlanById(planId) {
+    return MEMBERSHIP_PLANS.find((plan) => plan.id === planId);
+  }
+
   async function requestExtension() {
     try {
       const currentMembershipId = getCurrentMembershipId();
       const planId = selectedExtensionPlan || currentMembershipId;
-
-      const selectedPlan = MEMBERSHIP_PLANS.find((plan) => plan.id === planId);
+      const selectedPlan = getPlanById(planId);
 
       if (!selectedPlan) {
-      showToast("Please select membership plan.", "error");
+        showToast("Please select membership plan.", "error");
         return;
       }
 
@@ -251,119 +284,134 @@ function getPlanById(planId) {
         },
       }));
 
-   showToast(`Extension request sent.`);
-showSuccessModal(
-  "Request sent",
-  `Your request for ${selectedPlan.name} has been submitted successfully.`
-);
+      showToast("Extension request sent.");
+      showSuccessModal(
+        "Request sent",
+        `Your request for ${selectedPlan.name} has been submitted successfully.`
+      );
     } catch (err) {
       console.error(err);
-  showToast("Failed to send extension request.", "error");
+      showToast("Failed to send extension request.", "error");
     }
   }
-async function requestUpgrade(planId) {
-  try {
-    const targetPlan = getPlanById(planId);
 
-    if (!targetPlan) return;
+  async function requestUpgrade(planId) {
+    try {
+      const targetPlan = getPlanById(planId);
 
-    await updateDoc(doc(db, "coaches", id), {
-      upgradeRequested: true,
-      upgradeRequestedAt: serverTimestamp(),
-      requestedUpgradeTo: targetPlan.id,
-      requestedUpgradeMembership: {
-        id: targetPlan.id,
-        name: targetPlan.name,
-        price: targetPlan.price,
-      },
-    });
+      if (!targetPlan) {
+        showToast("Invalid upgrade plan.", "error");
+        return;
+      }
 
-    setCoach((prev) => ({
-      ...prev,
-      upgradeRequested: true,
-      requestedUpgradeTo: targetPlan.id,
-      requestedUpgradeMembership: {
-        id: targetPlan.id,
-        name: targetPlan.name,
-        price: targetPlan.price,
-      },
-    }));
+      await updateDoc(doc(db, "coaches", id), {
+        upgradeRequested: true,
+        upgradeRequestedAt: serverTimestamp(),
 
-    setFormData((prev) => ({
-      ...prev,
-      upgradeRequested: true,
-      requestedUpgradeTo: targetPlan.id,
-      requestedUpgradeMembership: {
-        id: targetPlan.id,
-        name: targetPlan.name,
-        price: targetPlan.price,
-      },
-    }));
+        requestedUpgradeTo: targetPlan.id,
+        requestedUpgradeMembership: {
+          id: targetPlan.id,
+          name: targetPlan.name,
+          price: targetPlan.price,
+        },
+      });
 
-showToast(`Upgrade request sent.`);
-showSuccessModal(
-  "Upgrade requested",
-  `Your request to upgrade to ${targetPlan.name} has been sent.`
-);
-  } catch (err) {
-    console.error(err);
-  showToast("Failed to send upgrade request.", "error");
+      setCoach((prev) => ({
+        ...prev,
+        upgradeRequested: true,
+        requestedUpgradeTo: targetPlan.id,
+        requestedUpgradeMembership: {
+          id: targetPlan.id,
+          name: targetPlan.name,
+          price: targetPlan.price,
+        },
+      }));
+
+      setFormData((prev) => ({
+        ...prev,
+        upgradeRequested: true,
+        requestedUpgradeTo: targetPlan.id,
+        requestedUpgradeMembership: {
+          id: targetPlan.id,
+          name: targetPlan.name,
+          price: targetPlan.price,
+        },
+      }));
+
+      showToast("Upgrade request sent.");
+      showSuccessModal(
+        "Upgrade requested",
+        `Your request to upgrade to ${targetPlan.name} has been sent.`
+      );
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to send upgrade request.", "error");
+    }
   }
-}
+
   async function handleSave() {
     const storage = getStorage();
     let updatedData = { ...formData };
 
-    if (formData.profileImage === "" && coach.profileImage) {
-      const oldRef = ref(storage, `coachProfiles/${id}/profile`);
-      await deleteObject(oldRef);
-      updatedData.profileImage = "";
-    }
+    try {
+      if (formData.profileImage === "" && coach.profileImage) {
+        const oldRef = ref(storage, `coachProfiles/${id}/profile`);
+        await deleteObject(oldRef);
+        updatedData.profileImage = "";
+      }
 
-    if (newProfileImage) {
-      const imgRef = ref(storage, `coachProfiles/${id}/profile`);
-      await uploadBytes(imgRef, newProfileImage);
-      const url = await getDownloadURL(imgRef);
-      updatedData.profileImage = url;
-    }
-
-    if (newGalleryImages.length > 0) {
-      const existingGallery = formData.galleryImages || [];
-      const uploadedNewImages = [];
-
-      for (let i = 0; i < newGalleryImages.length; i++) {
-        const img = newGalleryImages[i];
-        const imgRef = ref(
-          storage,
-          `coachProfiles/${id}/gallery_${Date.now()}_${i}`
-        );
-
-        await uploadBytes(imgRef, img);
+      if (newProfileImage) {
+        const imgRef = ref(storage, `coachProfiles/${id}/profile`);
+        await uploadBytes(imgRef, newProfileImage);
         const url = await getDownloadURL(imgRef);
-        uploadedNewImages.push(url);
+        updatedData.profileImage = url;
       }
 
-      updatedData.galleryImages = [...existingGallery, ...uploadedNewImages];
-    }
+      if (newGalleryImages.length > 0) {
+        const existingGallery = formData.galleryImages || [];
+        const uploadedNewImages = [];
 
-    await updateDoc(doc(db, "coaches", id), updatedData);
+        for (let i = 0; i < newGalleryImages.length; i++) {
+          const img = newGalleryImages[i];
+          const imgRef = ref(
+            storage,
+            `coachProfiles/${id}/gallery_${Date.now()}_${i}`
+          );
 
-    if (deletedGalleryImages.length > 0) {
-      try {
-        await Promise.all(
-          deletedGalleryImages.map((imgUrl) => deleteObject(ref(storage, imgUrl)))
-        );
-      } catch (deleteError) {
-        console.error("Gallery cleanup error:", deleteError);
+          await uploadBytes(imgRef, img);
+          const url = await getDownloadURL(imgRef);
+          uploadedNewImages.push(url);
+        }
+
+        updatedData.galleryImages = [...existingGallery, ...uploadedNewImages];
       }
-    }
 
-    setCoach(updatedData);
-    setFormData(updatedData);
-    setEditMode(false);
-    setNewProfileImage(null);
-    setNewGalleryImages([]);
-    setDeletedGalleryImages([]);
+      await updateDoc(doc(db, "coaches", id), updatedData);
+
+      if (deletedGalleryImages.length > 0) {
+        try {
+          await Promise.all(
+            deletedGalleryImages.map((imgUrl) =>
+              deleteObject(ref(storage, imgUrl))
+            )
+          );
+        } catch (deleteError) {
+          console.error("Gallery cleanup error:", deleteError);
+        }
+      }
+
+      setCoach(updatedData);
+      setFormData(updatedData);
+      setEditMode(false);
+      setNewProfileImage(null);
+      setNewGalleryImages([]);
+      setDeletedGalleryImages([]);
+
+      showToast("Profile updated.");
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to update profile.", "error");
+    }
   }
 
   function handleCancel() {
@@ -396,7 +444,9 @@ showSuccessModal(
 
     const match = url.match(/(?:youtube\.com\/.*v=|youtu\.be\/)([^&]+)/);
 
-    return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
+    return match
+      ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`
+      : null;
   }
 
   const existingCount = formData?.galleryImages?.length || 0;
@@ -411,31 +461,14 @@ showSuccessModal(
     );
   }
 
-  if (!coach) {
+  if (!coach || !formData) {
     return (
       <div className="loader">
         <p>Loading profile...</p>
       </div>
     );
   }
-function showToast(message, type = "success") {
-  setToast({
-    open: true,
-    type,
-    message,
-  });
 
-  setTimeout(() => {
-    setToast((prev) => ({ ...prev, open: false }));
-  }, 3000);
-}
-function showSuccessModal(title, message) {
-  setSuccessModal({
-    show: true,
-    title,
-    message,
-  });
-}
   return (
     <div
       className="coachProfilePage"
@@ -470,8 +503,12 @@ function showSuccessModal(title, message) {
                   {formData.profileImage && (
                     <button
                       className="removeBtn"
+                      type="button"
                       onClick={() =>
-                        setFormData((prev) => ({ ...prev, profileImage: "" }))
+                        setFormData((prev) => ({
+                          ...prev,
+                          profileImage: "",
+                        }))
                       }
                     >
                       Remove
@@ -536,9 +573,10 @@ function showSuccessModal(title, message) {
                   <p className="regionLine">
                     <strong>Region:</strong> {coach.region || "-"}
                   </p>
+
                   <p className="regionLine">
-  <strong>Email:</strong> {coach.email || "-"}
-</p>
+                    <strong>Email:</strong> {coach.email || "-"}
+                  </p>
                 </>
               )}
 
@@ -546,6 +584,7 @@ function showSuccessModal(title, message) {
                 <div className="heroActions">
                   <button
                     className="primaryBtn"
+                    type="button"
                     onClick={() => navigate("/jobs")}
                   >
                     View Available Jobs
@@ -553,6 +592,7 @@ function showSuccessModal(title, message) {
 
                   <button
                     className="secondaryBtn editBtn"
+                    type="button"
                     onClick={() => setEditMode(true)}
                   >
                     Edit Profile
@@ -560,6 +600,7 @@ function showSuccessModal(title, message) {
 
                   <button
                     className="logoutBtn"
+                    type="button"
                     onClick={() => setShowLogoutModal(true)}
                   >
                     Log out
@@ -569,11 +610,19 @@ function showSuccessModal(title, message) {
 
               {isOwner && editMode && (
                 <div className="editActions">
-                  <button className="primaryBtn" onClick={handleSave}>
+                  <button
+                    className="primaryBtn"
+                    type="button"
+                    onClick={handleSave}
+                  >
                     Save
                   </button>
 
-                  <button className="secondaryBtn" onClick={handleCancel}>
+                  <button
+                    className="secondaryBtn"
+                    type="button"
+                    onClick={handleCancel}
+                  >
                     Cancel
                   </button>
                 </div>
@@ -614,6 +663,7 @@ function showSuccessModal(title, message) {
                     {editMode && (
                       <button
                         className="removeExperienceBtn"
+                        type="button"
                         onClick={() => removeGalleryImage(img)}
                       >
                         x
@@ -634,6 +684,7 @@ function showSuccessModal(title, message) {
                   >
                     <button
                       className="removeExperienceBtn"
+                      type="button"
                       onClick={() => removeNewGalleryImage(i)}
                     >
                       x
@@ -656,6 +707,7 @@ function showSuccessModal(title, message) {
                       const allowed = incoming.slice(0, remainingSlots);
                       return [...prev, ...allowed];
                     });
+
                     e.target.value = "";
                   }}
                 />
@@ -676,7 +728,8 @@ function showSuccessModal(title, message) {
             </p>
 
             <p>
-              <strong>Valid until:</strong> {formatProfileDate(coach.expiresAt)}
+              <strong>Valid until:</strong>{" "}
+              {formatProfileDate(coach.expiresAt)}
             </p>
 
             <p>
@@ -712,6 +765,7 @@ function showSuccessModal(title, message) {
 
                 <button
                   className="primaryBtn"
+                  type="button"
                   onClick={requestExtension}
                   disabled={coach.extensionRequested}
                 >
@@ -729,28 +783,33 @@ function showSuccessModal(title, message) {
                   )}
               </div>
             )}
-{isOwner && getUpgradeOptions().length > 0 && (
-  <div className="upgradeBox">
-    <label className="extensionLabel">Upgrade membership</label>
 
-    {getUpgradeOptions().map((planId) => {
-      const plan = getPlanById(planId);
+            {isOwner && getUpgradeOptions().length > 0 && (
+              <div className="upgradeBox">
+                <label className="extensionLabel">Upgrade membership</label>
 
-      return (
-        <button
-          key={planId}
-          className="primaryBtn upgradeBtn"
-          onClick={() => requestUpgrade(planId)}
-          disabled={coach.upgradeRequested}
-        >
-          {coach.upgradeRequested && coach.requestedUpgradeTo === planId
-            ? "Upgrade requested"
-            : `Upgrade to ${plan.name}`}
-        </button>
-      );
-    })}
-  </div>
-)}
+                {getUpgradeOptions().map((planId) => {
+                  const plan = getPlanById(planId);
+
+                  if (!plan) return null;
+
+                  return (
+                    <button
+                      key={planId}
+                      className="primaryBtn upgradeBtn"
+                      type="button"
+                      onClick={() => requestUpgrade(planId)}
+                      disabled={coach.upgradeRequested}
+                    >
+                      {coach.upgradeRequested &&
+                      coach.requestedUpgradeTo === planId
+                        ? "Upgrade requested"
+                        : `Upgrade to ${plan.name}`}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -870,47 +929,56 @@ function showSuccessModal(title, message) {
             <div className="logoutActions">
               <button
                 className="secondaryBtn"
+                type="button"
                 onClick={() => setShowLogoutModal(false)}
               >
                 Cancel
               </button>
 
-              <button className="dangerBtn" onClick={handleLogout}>
+              <button className="dangerBtn" type="button" onClick={handleLogout}>
                 Log out
               </button>
             </div>
           </div>
         </div>
       )}
-      {toast.open && (
-  <div className={`toast ${toast.type === "error" ? "errorToast" : ""}`}>
-    <span>{toast.type === "error" ? "!" : "✓"}</span>
-    <p>{toast.message}</p>
-  </div>
-)}
-{successModal.show && (
-  <div
-    className="modalOverlay"
-    onClick={() => setSuccessModal((prev) => ({ ...prev, show: false }))}
-  >
-    <div
-      className="successModal"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <h3>{successModal.title}</h3>
-      <p>{successModal.message}</p>
 
-      <button
-        className="primaryBtn"
-        onClick={() =>
-          setSuccessModal((prev) => ({ ...prev, show: false }))
-        }
-      >
-        OK
-      </button>
-    </div>
-  </div>
-)}
+      {toast.open && (
+        <div className={`toast ${toast.type === "error" ? "errorToast" : ""}`}>
+          <span>{toast.type === "error" ? "!" : "✓"}</span>
+          <p>{toast.message}</p>
+        </div>
+      )}
+
+      {successModal.show && (
+        <div
+          className="modalOverlay"
+          onClick={() =>
+            setSuccessModal((prev) => ({
+              ...prev,
+              show: false,
+            }))
+          }
+        >
+          <div className="successModal" onClick={(e) => e.stopPropagation()}>
+            <h3>{successModal.title}</h3>
+            <p>{successModal.message}</p>
+
+            <button
+              className="primaryBtn"
+              type="button"
+              onClick={() =>
+                setSuccessModal((prev) => ({
+                  ...prev,
+                  show: false,
+                }))
+              }
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

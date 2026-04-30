@@ -54,12 +54,12 @@ export default function AcademyDashboard() {
       {
         id: "access",
         name: "Access",
-        price: "Free",
+        price: "50€",
       },
       {
         id: "member",
         name: "Member",
-        price: "300€",
+        price: "150€",
       },
     ],
     []
@@ -97,6 +97,22 @@ export default function AcademyDashboard() {
   const resetJobForm = useCallback(() => {
     setJobForm(emptyJobForm);
   }, [emptyJobForm]);
+
+  function openSuccessModal(title, message) {
+    setSuccessModal({
+      show: true,
+      title,
+      message,
+    });
+  }
+
+  function closeSuccessModal() {
+    setSuccessModal({
+      show: false,
+      title: "",
+      message: "",
+    });
+  }
 
   const handleLogout = useCallback(async () => {
     await signOut(auth);
@@ -163,37 +179,38 @@ export default function AcademyDashboard() {
     setApplications(apps);
   }, [id]);
 
-  const updateApplicationStatus = useCallback(async (appId, status) => {
-    await updateDoc(doc(db, "jobApplications", appId), {
-      status,
-      statusUpdatedAt: serverTimestamp(),
-    });
+const deleteApplication = useCallback(async (appId) => {
+  const ok = window.confirm("Are you sure you want to delete this application?");
+  if (!ok) return;
 
-    setApplications((prev) =>
-      prev.map((app) => (app.id === appId ? { ...app, status } : app))
+  try {
+    await deleteDoc(doc(db, "jobApplications", appId));
+
+    setApplications((prev) => prev.filter((app) => app.id !== appId));
+
+    openSuccessModal(
+      "Application deleted",
+      "The job application has been deleted."
     );
-
-    setSuccessModal({
-      show: true,
-      title:
-        status === "accepted"
-          ? "Application accepted"
-          : "Application rejected",
-      message:
-        status === "accepted"
-          ? "The coach application has been accepted."
-          : "The coach application has been rejected.",
-    });
-  }, []);
+  } catch (error) {
+    console.error(error);
+    openSuccessModal(
+      "Delete failed",
+      "The job application could not be deleted. Please try again."
+    );
+  }
+}, []);
 
   const requestExtension = useCallback(async () => {
     try {
       const planId = selectedExtensionPlan || currentMembershipId;
-
       const selectedPlan = MEMBERSHIP_PLANS.find((plan) => plan.id === planId);
 
       if (!selectedPlan) {
-        alert("Please select membership plan.");
+        openSuccessModal(
+          "Membership plan required",
+          "Please select a membership plan before sending the request."
+        );
         return;
       }
 
@@ -212,8 +229,7 @@ export default function AcademyDashboard() {
         previousMembership: academy.membership || null,
       });
 
-      setAcademy((prev) => ({
-        ...prev,
+      const extensionPayload = {
         extensionRequested: true,
         requestedExtensionPlan: selectedPlan.id,
         requestedExtensionMembership: {
@@ -221,27 +237,28 @@ export default function AcademyDashboard() {
           name: selectedPlan.name,
           price: selectedPlan.price,
         },
+      };
+
+      setAcademy((prev) => ({
+        ...prev,
+        ...extensionPayload,
       }));
 
       setFormData((prev) => ({
         ...prev,
-        extensionRequested: true,
-        requestedExtensionPlan: selectedPlan.id,
-        requestedExtensionMembership: {
-          id: selectedPlan.id,
-          name: selectedPlan.name,
-          price: selectedPlan.price,
-        },
+        ...extensionPayload,
       }));
 
-      setSuccessModal({
-        show: true,
-        title: "Request sent",
-        message: `Your extension request for ${selectedPlan.name} membership has been successfully submitted.`,
-      });
+      openSuccessModal(
+        "Request sent",
+        `Your extension request for ${selectedPlan.name} membership has been successfully submitted.`
+      );
     } catch (error) {
       console.error(error);
-      alert("Failed to send extension request.");
+      openSuccessModal(
+        "Request failed",
+        "Failed to send extension request. Please try again."
+      );
     }
   }, [
     id,
@@ -253,93 +270,143 @@ export default function AcademyDashboard() {
 
   const requestUpgrade = useCallback(async () => {
     try {
+      const memberPlan = MEMBERSHIP_PLANS.find((plan) => plan.id === "member");
+
+      if (!memberPlan) {
+        openSuccessModal(
+          "Upgrade unavailable",
+          "Member plan is currently unavailable."
+        );
+        return;
+      }
+
       await updateDoc(doc(db, "academies", id), {
         upgradeRequested: true,
         upgradeRequestedAt: serverTimestamp(),
-        requestedUpgradeTo: "member",
+
+        requestedUpgradeTo: memberPlan.id,
+        requestedUpgradeMembership: {
+          id: memberPlan.id,
+          name: memberPlan.name,
+          price: memberPlan.price,
+        },
       });
+
+      const upgradePayload = {
+        upgradeRequested: true,
+        requestedUpgradeTo: memberPlan.id,
+        requestedUpgradeMembership: {
+          id: memberPlan.id,
+          name: memberPlan.name,
+          price: memberPlan.price,
+        },
+      };
 
       setAcademy((prev) => ({
         ...prev,
-        upgradeRequested: true,
-        requestedUpgradeTo: "member",
+        ...upgradePayload,
       }));
 
       setFormData((prev) => ({
         ...prev,
-        upgradeRequested: true,
-        requestedUpgradeTo: "member",
+        ...upgradePayload,
       }));
 
-      setSuccessModal({
-        show: true,
-        title: "Upgrade request sent",
-        message: "Your membership upgrade request has been sent to admin.",
-      });
+      openSuccessModal(
+        "Upgrade request sent",
+        "Your membership upgrade request has been sent to admin."
+      );
     } catch (error) {
       console.error(error);
-      alert("Failed to send upgrade request.");
+      openSuccessModal(
+        "Request failed",
+        "Failed to send upgrade request. Please try again."
+      );
     }
-  }, [id]);
+  }, [id, MEMBERSHIP_PLANS]);
 
   const handleSaveProfile = useCallback(async () => {
-    await updateDoc(doc(db, "academies", id), formData);
-    setAcademy(formData);
-    setEditMode(false);
+    try {
+      await updateDoc(doc(db, "academies", id), formData);
+      setAcademy(formData);
+      setEditMode(false);
+
+      openSuccessModal("Profile updated", "Your academy profile has been saved.");
+    } catch (error) {
+      console.error(error);
+      openSuccessModal(
+        "Save failed",
+        "Your academy profile could not be saved. Please try again."
+      );
+    }
   }, [formData, id]);
 
   const saveJob = useCallback(async () => {
-    if (editingJob) {
-      await updateDoc(doc(db, "academies", id, "jobs", editingJob.id), jobForm);
+    try {
+      if (editingJob) {
+        await updateDoc(
+          doc(db, "academies", id, "jobs", editingJob.id),
+          jobForm
+        );
 
-      setJobs((prev) =>
-        prev.map((job) =>
-          job.id === editingJob.id ? { ...jobForm, id: editingJob.id } : job
-        )
-      );
+        setJobs((prev) =>
+          prev.map((job) =>
+            job.id === editingJob.id ? { ...jobForm, id: editingJob.id } : job
+          )
+        );
 
-      setShowJobForm(false);
-      setEditingJob(null);
-      resetJobForm();
-      return;
-    }
+        setShowJobForm(false);
+        setEditingJob(null);
+        resetJobForm();
 
-    if (isAccessAcademy) {
-      await addDoc(collection(db, "jobPostRequests"), {
+        openSuccessModal("Job updated", "The job post has been updated.");
+        return;
+      }
+
+      if (isAccessAcademy) {
+        await addDoc(collection(db, "jobPostRequests"), {
+          ...jobForm,
+          academyId: id,
+          academyName: academy.organisationName,
+          academyEmail: academy.email || "",
+          membershipPlan: academy.membershipPlan || "",
+          membership: academy.membership || null,
+          status: "pending",
+          createdAt: serverTimestamp(),
+        });
+
+        openSuccessModal(
+          "Job request sent",
+          "Your job post request has been sent to admin for approval."
+        );
+
+        setShowJobForm(false);
+        setEditingJob(null);
+        resetJobForm();
+        return;
+      }
+
+      const docRef = await addDoc(collection(db, "academies", id, "jobs"), {
         ...jobForm,
         academyId: id,
         academyName: academy.organisationName,
-        academyEmail: academy.email || "",
-        membershipPlan: academy.membershipPlan || "",
-        membership: academy.membership || null,
-        status: "pending",
         createdAt: serverTimestamp(),
       });
 
-      setSuccessModal({
-        show: true,
-        title: "Job request sent",
-        message: "Your job post request has been sent to admin for approval.",
-      });
+      setJobs((prev) => [...prev, { ...jobForm, id: docRef.id }]);
 
       setShowJobForm(false);
       setEditingJob(null);
       resetJobForm();
-      return;
+
+      openSuccessModal("Job created", "The job post has been published.");
+    } catch (error) {
+      console.error(error);
+      openSuccessModal(
+        "Job action failed",
+        "The job post could not be saved. Please try again."
+      );
     }
-
-    const docRef = await addDoc(collection(db, "academies", id, "jobs"), {
-      ...jobForm,
-      academyId: id,
-      academyName: academy.organisationName,
-      createdAt: serverTimestamp(),
-    });
-
-    setJobs((prev) => [...prev, { ...jobForm, id: docRef.id }]);
-
-    setShowJobForm(false);
-    setEditingJob(null);
-    resetJobForm();
   }, [academy, editingJob, id, jobForm, resetJobForm, isAccessAcademy]);
 
   const deleteJob = useCallback(
@@ -347,8 +414,18 @@ export default function AcademyDashboard() {
       const ok = window.confirm("Are you sure you want to delete this job post?");
       if (!ok) return;
 
-      await deleteDoc(doc(db, "academies", id, "jobs", jobId));
-      setJobs((prev) => prev.filter((j) => j.id !== jobId));
+      try {
+        await deleteDoc(doc(db, "academies", id, "jobs", jobId));
+        setJobs((prev) => prev.filter((j) => j.id !== jobId));
+
+        openSuccessModal("Job deleted", "The job post has been deleted.");
+      } catch (error) {
+        console.error(error);
+        openSuccessModal(
+          "Delete failed",
+          "The job post could not be deleted. Please try again."
+        );
+      }
     },
     [id]
   );
@@ -388,38 +465,38 @@ export default function AcademyDashboard() {
     if (!id) return;
 
     let active = true;
-async function fetchAcademy() {
-  const refDoc = doc(db, "academies", id);
-  const snap = await getDoc(refDoc);
 
-  if (!active || !snap.exists()) return;
+    async function fetchAcademy() {
+      const refDoc = doc(db, "academies", id);
+      const snap = await getDoc(refDoc);
 
-  let data = snap.data();
-  const now = new Date();
+      if (!active || !snap.exists()) return;
 
-  // 🔥 AUTO SWITCH MEMBERSHIP
-  if (
-    data.nextMembershipPlan &&
-    data.nextMembershipStartsAt &&
-    data.nextMembershipStartsAt.toDate() <= now
-  ) {
-    await updateDoc(refDoc, {
-      membershipPlan: data.nextMembershipPlan,
-      membership: data.nextMembership,
+      let data = snap.data();
+      const now = new Date();
 
-      nextMembershipPlan: null,
-      nextMembership: null,
-      nextMembershipStartsAt: null,
-    });
+      if (
+        data.nextMembershipPlan &&
+        data.nextMembershipStartsAt &&
+        data.nextMembershipStartsAt.toDate() <= now
+      ) {
+        await updateDoc(refDoc, {
+          membershipPlan: data.nextMembershipPlan,
+          membership: data.nextMembership,
 
-    // reload nakon update-a
-    const updatedSnap = await getDoc(refDoc);
-    data = updatedSnap.data();
-  }
+          nextMembershipPlan: null,
+          nextMembership: null,
+          nextMembershipStartsAt: null,
+        });
 
-  setAcademy(data);
-  setFormData(data);
-}
+        const updatedSnap = await getDoc(refDoc);
+        data = updatedSnap.data();
+      }
+
+      setAcademy(data);
+      setFormData(data);
+    }
+
     async function fetchJobs() {
       const snap = await getDocs(collection(db, "academies", id, "jobs"));
 
@@ -531,6 +608,7 @@ async function fetchAcademy() {
               <div className="heroActions">
                 <button
                   className="secondaryBtn"
+                  type="button"
                   onClick={() => setEditMode(true)}
                 >
                   Edit Profile
@@ -538,6 +616,7 @@ async function fetchAcademy() {
 
                 <button
                   className="logoutBtn"
+                  type="button"
                   onClick={() => setShowLogoutModal(true)}
                 >
                   Log out
@@ -545,12 +624,17 @@ async function fetchAcademy() {
               </div>
             ) : (
               <div className="editActions">
-                <button className="primaryBtn" onClick={handleSaveProfile}>
+                <button
+                  className="primaryBtn"
+                  type="button"
+                  onClick={handleSaveProfile}
+                >
                   Save
                 </button>
 
                 <button
                   className="secondaryBtn"
+                  type="button"
                   onClick={() => {
                     setFormData(academy);
                     setEditMode(false);
@@ -597,6 +681,7 @@ async function fetchAcademy() {
         <div className="dashboardActions">
           <button
             className="primaryBtn"
+            type="button"
             onClick={() => {
               setShowJobForm(true);
               setShowCoaches(false);
@@ -610,6 +695,7 @@ async function fetchAcademy() {
 
           <button
             className="secondaryBtn"
+            type="button"
             onClick={async () => {
               await fetchApplications();
               setShowApplications(true);
@@ -624,6 +710,7 @@ async function fetchAcademy() {
           {isMemberAcademy && (
             <button
               className="secondaryBtn"
+              type="button"
               onClick={() => {
                 setShowCoaches(true);
                 setShowApplications(false);
@@ -658,19 +745,22 @@ async function fetchAcademy() {
           </p>
 
           <p>
-            <strong>Valid until:</strong> {formatProfileDate(academy.expiresAt)}
+            <strong>Valid until:</strong>{" "}
+            {formatProfileDate(academy.expiresAt)}
           </p>
 
           <p>
             <strong>Status:</strong>{" "}
             {isProfileActive(academy.expiresAt) ? "Active" : "Expired"}
           </p>
-{academy.nextMembershipPlan && (
-  <p className="muted">
-    <strong>Next membership:</strong>{" "}
-    {academy.nextMembership?.name || academy.nextMembershipPlan}
-  </p>
-)}
+
+          {academy.nextMembershipPlan && (
+            <p className="muted">
+              <strong>Next membership:</strong>{" "}
+              {academy.nextMembership?.name || academy.nextMembershipPlan}
+            </p>
+          )}
+
           <div className="extensionBox">
             <label className="extensionLabel">
               Choose membership for extension
@@ -691,6 +781,7 @@ async function fetchAcademy() {
 
             <button
               className="primaryBtn"
+              type="button"
               onClick={requestExtension}
               disabled={academy.extensionRequested}
             >
@@ -711,6 +802,7 @@ async function fetchAcademy() {
           {isAccessAcademy && (
             <button
               className="secondaryBtn upgradeBtn"
+              type="button"
               onClick={requestUpgrade}
               disabled={academy.upgradeRequested}
             >
@@ -807,12 +899,13 @@ async function fetchAcademy() {
           />
 
           <div className="editActions">
-            <button className="primaryBtn" onClick={saveJob}>
+            <button className="primaryBtn" type="button" onClick={saveJob}>
               {isAccessAcademy && !editingJob ? "Send Request" : "Save"}
             </button>
 
             <button
               className="secondaryBtn"
+              type="button"
               onClick={() => {
                 setShowJobForm(false);
                 setEditingJob(null);
@@ -876,34 +969,23 @@ async function fetchAcademy() {
                     <strong>Status:</strong> {app.status || "pending"}
                   </p>
 
-                  <div className="jobActions">
-                    <button
-                      className="secondaryBtn"
-                      onClick={() => navigate(`/coach/${app.coachId}`)}
-                    >
-                      View Profile
-                    </button>
+             <div className="jobActions">
+  <button
+    className="secondaryBtn"
+    type="button"
+    onClick={() => navigate(`/coach/${app.coachId}`)}
+  >
+    View Profile
+  </button>
 
-                    <button
-                      className="primaryBtn"
-                      onClick={() =>
-                        updateApplicationStatus(app.id, "accepted")
-                      }
-                      disabled={app.status === "accepted"}
-                    >
-                      Accept
-                    </button>
-
-                    <button
-                      className="dangerBtn"
-                      onClick={() =>
-                        updateApplicationStatus(app.id, "rejected")
-                      }
-                      disabled={app.status === "rejected"}
-                    >
-                      Reject
-                    </button>
-                  </div>
+  <button
+    className="dangerBtn"
+    type="button"
+    onClick={() => deleteApplication(app.id)}
+  >
+    Delete
+  </button>
+</div>
                 </div>
               ))}
             </div>
@@ -947,6 +1029,7 @@ async function fetchAcademy() {
               <div className="jobActions">
                 <button
                   className="secondaryBtn"
+                  type="button"
                   onClick={() => {
                     setEditingJob(job);
                     setJobForm(job);
@@ -957,7 +1040,11 @@ async function fetchAcademy() {
                   Edit
                 </button>
 
-                <button className="dangerBtn" onClick={() => deleteJob(job.id)}>
+                <button
+                  className="dangerBtn"
+                  type="button"
+                  onClick={() => deleteJob(job.id)}
+                >
                   Delete
                 </button>
               </div>
@@ -981,12 +1068,13 @@ async function fetchAcademy() {
             <div className="logoutActions">
               <button
                 className="secondaryBtn"
+                type="button"
                 onClick={() => setShowLogoutModal(false)}
               >
                 Cancel
               </button>
 
-              <button className="dangerBtn" onClick={handleLogout}>
+              <button className="dangerBtn" type="button" onClick={handleLogout}>
                 Log out
               </button>
             </div>
@@ -995,12 +1083,7 @@ async function fetchAcademy() {
       )}
 
       {successModal.show && (
-        <div
-          className="modalOverlay"
-          onClick={() =>
-            setSuccessModal({ show: false, title: "", message: "" })
-          }
-        >
+        <div className="modalOverlay" onClick={closeSuccessModal}>
           <div className="successModal" onClick={(e) => e.stopPropagation()}>
             <div className="successIcon">✓</div>
 
@@ -1009,9 +1092,8 @@ async function fetchAcademy() {
 
             <button
               className="primaryBtn"
-              onClick={() =>
-                setSuccessModal({ show: false, title: "", message: "" })
-              }
+              type="button"
+              onClick={closeSuccessModal}
             >
               OK
             </button>

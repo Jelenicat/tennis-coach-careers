@@ -633,6 +633,7 @@
 .successModal {
   background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-radius: 22px;
   padding: 32px 28px;
   width: 100%;
@@ -652,4 +653,18 @@
   font-size: 14px;
   opacity: 0.9;
   margin-bottom: 20px;
+}
+
+@media (max-width: 480px) {
+  .toast {
+    left: 16px;
+    right: 16px;
+    bottom: 18px;
+    justify-content: center;
+  }
+
+  .successModal {
+    margin: 0 16px;
+    padding: 28px 22px;
+  }
 }
