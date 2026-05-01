@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tennis-coach-careers.com/sitemap.xml

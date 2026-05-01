@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  Timestamp,
+} from "firebase/firestore";
 import { db } from "../../firebase";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
@@ -17,14 +23,26 @@ export default function CoachList({ onClose }) {
   /* ================= AUTH ================= */
   useEffect(() => {
     const auth = getAuth();
-    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+    });
+
     return () => unsub();
   }, []);
 
   /* ================= FETCH COACHES ================= */
   useEffect(() => {
     async function fetchCoaches() {
-      const snap = await getDocs(collection(db, "coaches"));
+      const q = query(
+        collection(db, "coaches"),
+        where("approvalStatus", "==", "approved"),
+        where("profileVisible", "==", true),
+        where("expiresAt", ">", Timestamp.now())
+      );
+
+      const snap = await getDocs(q);
+
       setCoaches(
         snap.docs.map((doc) => ({
           id: doc.id,
@@ -32,44 +50,42 @@ export default function CoachList({ onClose }) {
         }))
       );
     }
+
     fetchCoaches();
   }, []);
 
   /* ================= SEARCH ================= */
   const filteredCoaches = coaches.filter((coach) =>
-    (coach.fullName || "")
-      .toLowerCase()
-      .includes(search.toLowerCase())
+    (coach.fullName || "").toLowerCase().includes(search.toLowerCase())
   );
 
   function getDisplayName(fullName) {
     if (!fullName) return "Coach";
     if (user) return fullName;
 
-    const parts = fullName.split(" ");
+    const parts = fullName.trim().split(" ").filter(Boolean);
+
+    if (parts.length === 0) return "Coach";
     if (parts.length === 1) return parts[0];
+
     return `${parts[0]} ${parts[1][0]}.`;
   }
 
   /* ================= RENDER ================= */
   return (
     <div
-  className="coachOverlay"
-  onClick={() => {
-    if (showAuthPrompt) return; // ⬅️ ne zatvaraj listu dok je auth otvoren
-    onClose();
-  }}
->
-
-     <div
-  className="coachListCard"
-  onClick={(e) => e.stopPropagation()}
->
-
+      className="coachOverlay"
+      onClick={() => {
+        if (showAuthPrompt) return;
+        onClose?.();
+      }}
+    >
+      <div className="coachListCard" onClick={(e) => e.stopPropagation()}>
         {/* HEADER */}
         <div className="coachListHeader">
           <h3>Available Coaches</h3>
-          <button className="secondaryBtn" onClick={onClose}>
+
+          <button className="secondaryBtn" type="button" onClick={onClose}>
             Close
           </button>
         </div>
@@ -95,13 +111,12 @@ export default function CoachList({ onClose }) {
               <img
                 src={coach.profileImage || "/images/avatar-placeholder.png"}
                 className="coachAvatarSmall"
-                alt=""
+                alt={coach.fullName || "Coach"}
               />
 
               <div>
-                <div className="coachName">
-                  {getDisplayName(coach.fullName)}
-                </div>
+                <div className="coachName">{getDisplayName(coach.fullName)}</div>
+
                 <div className="coachLocation">
                   {coach.region || coach.city || "—"}
                 </div>
@@ -110,12 +125,14 @@ export default function CoachList({ onClose }) {
 
             <button
               className="secondaryBtn"
+              type="button"
               onClick={() => {
                 if (!user) {
                   setShowAuthPrompt(true);
-                } else {
-                  navigate(`/coach/${coach.id}`);
+                  return;
                 }
+
+                navigate(`/coach/${coach.id}`);
               }}
             >
               View Profile
@@ -124,44 +141,54 @@ export default function CoachList({ onClose }) {
         ))}
 
         {/* AUTH MODAL */}
-       {showAuthPrompt &&
-  createPortal(
-    <div className="authOverlay authOverlayFull">
-      <div className="authModal authModalFull" onClick={(e) => e.stopPropagation()}>
-        <h3>Login required</h3>
-        <p>You must log in to view coach profiles.</p>
+        {showAuthPrompt &&
+          createPortal(
+            <div className="authOverlay authOverlayFull">
+              <div
+                className="authModal authModalFull"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3>Login required</h3>
 
-        <div className="authActions">
-          <button
-            className="primaryBtn"
-            onClick={() => {
-              setShowAuthPrompt(false);
-              onClose?.();
-              navigate("/login");
-            }}
-          >
-            Log in
-          </button>
+                <p>You must log in to view coach profiles.</p>
 
-          <button
-            className="secondaryBtn"
-            onClick={() => {
-              setShowAuthPrompt(false);
-              onClose?.();
-              navigate("/choose-role");
-            }}
-          >
-            Sign up
-          </button>
-        </div>
+                <div className="authActions">
+                  <button
+                    className="primaryBtn"
+                    type="button"
+                    onClick={() => {
+                      setShowAuthPrompt(false);
+                      onClose?.();
+                      navigate("/login");
+                    }}
+                  >
+                    Log in
+                  </button>
 
-        <button className="authClose" onClick={() => setShowAuthPrompt(false)}>
-          ✕
-        </button>
-      </div>
-    </div>,
-    document.body
-  )}
+                  <button
+                    className="secondaryBtn"
+                    type="button"
+                    onClick={() => {
+                      setShowAuthPrompt(false);
+                      onClose?.();
+                      navigate("/choose-role");
+                    }}
+                  >
+                    Sign up
+                  </button>
+                </div>
+
+                <button
+                  className="authClose"
+                  type="button"
+                  onClick={() => setShowAuthPrompt(false)}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>,
+            document.body
+          )}
       </div>
     </div>
   );

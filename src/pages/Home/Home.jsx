@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "../../firebase";
-
+import SEO from "../../components/SEO";
 export default function Home() {
   const navigate = useNavigate();
   const [showCookies, setShowCookies] = useState(false);
@@ -46,7 +46,31 @@ useEffect(() => {
     setShowCookies(false);
   }
 
-  return (
+return (
+  <>
+    <SEO
+      title="Tennis Jobs for Coaches and Academies"
+      description="Tennis Coach Careers connects tennis coaches with academies worldwide. Create your profile, discover tennis job opportunities, and connect with tennis professionals."
+      url="https://tennis-coach-careers.com/"
+      jsonLd={{
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "Tennis Coach Careers",
+        url: "https://tennis-coach-careers.com/",
+        description:
+          "Tennis Coach Careers connects tennis coaches with academies worldwide. Create your profile, discover tennis job opportunities, and connect with tennis professionals.",
+        publisher: {
+          "@type": "Organization",
+          name: "Tennis Coach Careers",
+          url: "https://tennis-coach-careers.com/",
+          logo: {
+            "@type": "ImageObject",
+            url: "https://tennis-coach-careers.com/favicon.png",
+          },
+        },
+      }}
+    />
+
     <Shell>
       <div className="home">
         {/* DESKTOP HEADER */}
@@ -453,6 +477,7 @@ useEffect(() => {
           </div>
         )}
       </div>
-    </Shell>
-  );
+      </Shell>
+  </>
+);
 }

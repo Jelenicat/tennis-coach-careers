@@ -1,45 +1,51 @@
 import { useNavigate } from "react-router-dom";
 import "../Register/auth.css";
 import Button from "../../components/ui/Button";
+import SEO from "../../components/SEO";
 
 export default function ChooseRole() {
   const navigate = useNavigate();
 
   return (
-    <div className="authPage">
-      <div className="authCard chooseRoleCard">
-        <img
-          src="/images/logo.png"
-          alt="Tennis Coach Careers"
-          className="authLogo"
-        />
+    <>
+      <SEO
+        title="Join as a Coach or Academy"
+        description="Join Tennis Coach Careers as a tennis coach or tennis academy and connect with tennis opportunities worldwide."
+        url="https://tennis-coach-careers.com/choose-role"
+      />
 
-        <h2 className="chooseRoleTitle">
-          Join Tennis Coach Careers
-        </h2>
+      <div className="authPage">
+        <div className="authCard chooseRoleCard">
+          <img
+            src="/images/logo.png"
+            alt="Tennis Coach Careers"
+            className="authLogo"
+          />
 
-        <p className="authSubtitle">
-          Tell us how you want to use the platform
-        </p>
+          <h2 className="chooseRoleTitle">Join Tennis Coach Careers</h2>
 
-        {/* WRAPPER ZA DUGMAD */}
-        <div className="roleButtons">
-          <Button
-            className="primaryBtn full"
-            onClick={() => navigate("/register/coach")}
-          >
-            I am a Tennis Coach
-          </Button>
+          <p className="authSubtitle">
+            Tell us how you want to use the platform
+          </p>
 
-          <Button
-            variant="outline"
-            className="secondaryBtn"
-            onClick={() => navigate("/register/academy")}
-          >
-            I represent a Club / Academy
-          </Button>
+          <div className="roleButtons">
+            <Button
+              className="primaryBtn full"
+              onClick={() => navigate("/register/coach")}
+            >
+              I am a Tennis Coach
+            </Button>
+
+            <Button
+              variant="outline"
+              className="secondaryBtn"
+              onClick={() => navigate("/register/academy")}
+            >
+              I represent a Club / Academy
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

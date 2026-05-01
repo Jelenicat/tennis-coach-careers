@@ -16,7 +16,7 @@ import {
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, db } from "../../firebase";
 import CoachList from "../Coach/CoachList";
-
+import SEO from "../../components/SEO";
 export default function AcademyDashboard() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -36,7 +36,14 @@ export default function AcademyDashboard() {
     title: "",
     message: "",
   });
-
+const [confirmModal, setConfirmModal] = useState({
+  show: false,
+  title: "",
+  message: "",
+  confirmText: "Delete",
+  danger: true,
+  onConfirm: null,
+});
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
 
@@ -54,18 +61,19 @@ export default function AcademyDashboard() {
       {
         id: "access",
         name: "Access",
-        price: "50€",
+        price: "Free",
       },
       {
         id: "member",
         name: "Member",
-        price: "150€",
+        price: "300€ / year",
       },
     ],
     []
   );
 
   const currentMembershipId = membershipId || "access";
+  const membershipActive = isProfileActive(academy?.expiresAt);
 
   const REGIONS = [
     "Europe",
@@ -113,22 +121,35 @@ export default function AcademyDashboard() {
       message: "",
     });
   }
+function openConfirmModal({ title, message, confirmText = "Delete", danger = true, onConfirm }) {
+  setConfirmModal({
+    show: true,
+    title,
+    message,
+    confirmText,
+    danger,
+    onConfirm,
+  });
+}
 
-  const handleLogout = useCallback(async () => {
-    await signOut(auth);
-    navigate("/", { replace: true });
-  }, [navigate]);
+function closeConfirmModal() {
+  setConfirmModal({
+    show: false,
+    title: "",
+    message: "",
+    confirmText: "Delete",
+    danger: true,
+    onConfirm: null,
+  });
+}
 
-  const handleChange = useCallback((e) => {
-    const { name, value } = e.target;
-    setFormData((p) => ({ ...p, [name]: value }));
-  }, []);
+async function handleConfirmAction() {
+  if (confirmModal.onConfirm) {
+    await confirmModal.onConfirm();
+  }
 
-  const handleJobChange = useCallback((e) => {
-    const { name, value } = e.target;
-    setJobForm((p) => ({ ...p, [name]: value }));
-  }, []);
-
+  closeConfirmModal();
+}
   function formatProfileDate(value) {
     if (!value) return "Not set";
 
@@ -161,6 +182,34 @@ export default function AcademyDashboard() {
     return date > new Date();
   }
 
+  function getAcademyJobMeta() {
+    return {
+      academyId: id,
+      academyName: academy.organisationName || "",
+      academyEmail: academy.email || "",
+      academyMembershipPlan: academy.membershipPlan || "",
+      academyMembership: academy.membership || null,
+      academyExpiresAt: academy.expiresAt || null,
+      academyProfileVisible: academy.profileVisible !== false,
+      academyApprovalStatus: academy.approvalStatus || "approved",
+    };
+  }
+
+  const handleLogout = useCallback(async () => {
+    await signOut(auth);
+    navigate("/", { replace: true });
+  }, [navigate]);
+
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  }, []);
+
+  const handleJobChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setJobForm((prev) => ({ ...prev, [name]: value }));
+  }, []);
+
   const fetchApplications = useCallback(async () => {
     if (!id) return;
 
@@ -179,26 +228,32 @@ export default function AcademyDashboard() {
     setApplications(apps);
   }, [id]);
 
-const deleteApplication = useCallback(async (appId) => {
-  const ok = window.confirm("Are you sure you want to delete this application?");
-  if (!ok) return;
+  const deleteApplication = useCallback((appId) => {
+  openConfirmModal({
+    title: "Delete application?",
+    message:
+      "Are you sure you want to delete this job application? This action cannot be undone.",
+    confirmText: "Delete application",
+    danger: true,
+    onConfirm: async () => {
+      try {
+        await deleteDoc(doc(db, "jobApplications", appId));
 
-  try {
-    await deleteDoc(doc(db, "jobApplications", appId));
+        setApplications((prev) => prev.filter((app) => app.id !== appId));
 
-    setApplications((prev) => prev.filter((app) => app.id !== appId));
-
-    openSuccessModal(
-      "Application deleted",
-      "The job application has been deleted."
-    );
-  } catch (error) {
-    console.error(error);
-    openSuccessModal(
-      "Delete failed",
-      "The job application could not be deleted. Please try again."
-    );
-  }
+        openSuccessModal(
+          "Application deleted",
+          "The job application has been deleted."
+        );
+      } catch (error) {
+        console.error(error);
+        openSuccessModal(
+          "Delete failed",
+          "The job application could not be deleted. Please try again."
+        );
+      }
+    },
+  });
 }, []);
 
   const requestExtension = useCallback(async () => {
@@ -343,15 +398,32 @@ const deleteApplication = useCallback(async (appId) => {
 
   const saveJob = useCallback(async () => {
     try {
-      if (editingJob) {
-        await updateDoc(
-          doc(db, "academies", id, "jobs", editingJob.id),
-          jobForm
+      if (!membershipActive) {
+        openSuccessModal(
+          "Membership expired",
+          "Your membership has expired. Please request an extension before creating or editing job posts."
         );
+        return;
+      }
+
+      const academyJobMeta = getAcademyJobMeta();
+
+      if (editingJob) {
+        await updateDoc(doc(db, "academies", id, "jobs", editingJob.id), {
+          ...jobForm,
+          ...academyJobMeta,
+          updatedAt: serverTimestamp(),
+        });
 
         setJobs((prev) =>
           prev.map((job) =>
-            job.id === editingJob.id ? { ...jobForm, id: editingJob.id } : job
+            job.id === editingJob.id
+              ? {
+                  ...jobForm,
+                  ...academyJobMeta,
+                  id: editingJob.id,
+                }
+              : job
           )
         );
 
@@ -366,9 +438,7 @@ const deleteApplication = useCallback(async (appId) => {
       if (isAccessAcademy) {
         await addDoc(collection(db, "jobPostRequests"), {
           ...jobForm,
-          academyId: id,
-          academyName: academy.organisationName,
-          academyEmail: academy.email || "",
+          ...academyJobMeta,
           membershipPlan: academy.membershipPlan || "",
           membership: academy.membership || null,
           status: "pending",
@@ -388,12 +458,18 @@ const deleteApplication = useCallback(async (appId) => {
 
       const docRef = await addDoc(collection(db, "academies", id, "jobs"), {
         ...jobForm,
-        academyId: id,
-        academyName: academy.organisationName,
+        ...academyJobMeta,
         createdAt: serverTimestamp(),
       });
 
-      setJobs((prev) => [...prev, { ...jobForm, id: docRef.id }]);
+      setJobs((prev) => [
+        ...prev,
+        {
+          ...jobForm,
+          ...academyJobMeta,
+          id: docRef.id,
+        },
+      ]);
 
       setShowJobForm(false);
       setEditingJob(null);
@@ -407,28 +483,43 @@ const deleteApplication = useCallback(async (appId) => {
         "The job post could not be saved. Please try again."
       );
     }
-  }, [academy, editingJob, id, jobForm, resetJobForm, isAccessAcademy]);
+  }, [
+    academy,
+    editingJob,
+    id,
+    jobForm,
+    resetJobForm,
+    isAccessAcademy,
+    membershipActive,
+  ]);
 
-  const deleteJob = useCallback(
-    async (jobId) => {
-      const ok = window.confirm("Are you sure you want to delete this job post?");
-      if (!ok) return;
+const deleteJob = useCallback(
+  (jobId) => {
+    openConfirmModal({
+      title: "Delete job post?",
+      message:
+        "Are you sure you want to delete this job post? This action cannot be undone.",
+      confirmText: "Delete job",
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "academies", id, "jobs", jobId));
 
-      try {
-        await deleteDoc(doc(db, "academies", id, "jobs", jobId));
-        setJobs((prev) => prev.filter((j) => j.id !== jobId));
+          setJobs((prev) => prev.filter((job) => job.id !== jobId));
 
-        openSuccessModal("Job deleted", "The job post has been deleted.");
-      } catch (error) {
-        console.error(error);
-        openSuccessModal(
-          "Delete failed",
-          "The job post could not be deleted. Please try again."
-        );
-      }
-    },
-    [id]
-  );
+          openSuccessModal("Job deleted", "The job post has been deleted.");
+        } catch (error) {
+          console.error(error);
+          openSuccessModal(
+            "Delete failed",
+            "The job post could not be deleted. Please try again."
+          );
+        }
+      },
+    });
+  },
+  [id]
+);
 
   useEffect(() => {
     if (!showLogoutModal) return;
@@ -448,18 +539,26 @@ const deleteApplication = useCallback(async (appId) => {
         return;
       }
 
-      const snap = await getDoc(doc(db, "users", user.uid));
+  const snap = await getDoc(doc(db, "users", user.uid));
 
-      if (!snap.exists() || snap.data().role !== "academy") {
-        navigate("/login", { replace: true });
-        return;
-      }
+if (!snap.exists() || snap.data().role !== "academy") {
+  navigate("/login", { replace: true });
+  return;
+}
 
-      setCheckingAuth(false);
+const userData = snap.data();
+const academyId = userData.academyId || userData.profileId || user.uid;
+
+if (academyId !== id) {
+  navigate(`/academy/${academyId}`, { replace: true });
+  return;
+}
+
+setCheckingAuth(false);
     });
 
     return () => unsub();
-  }, [navigate]);
+}, [navigate, id]);
 
   useEffect(() => {
     if (!id) return;
@@ -514,23 +613,45 @@ const deleteApplication = useCallback(async (appId) => {
     };
   }, [id, fetchApplications]);
 
-  if (checkingAuth) {
-    return (
+if (checkingAuth) {
+  return (
+    <>
+      <SEO
+        title="Academy Dashboard"
+        description="Private academy dashboard."
+        noindex
+      />
+
       <div className="loader">
         <p>Checking access...</p>
       </div>
-    );
-  }
+    </>
+  );
+}
+if (!academy || !formData) {
+  return (
+    <>
+      <SEO
+        title="Academy Dashboard"
+        description="Private academy dashboard."
+        noindex
+      />
 
-  if (!academy || !formData) {
-    return (
       <div className="loader">
         <p>Loading academy profile...</p>
       </div>
-    );
-  }
+    </>
+  );
+}
 
-  return (
+return (
+  <>
+    <SEO
+      title="Academy Dashboard"
+      description="Private academy dashboard."
+      noindex
+    />
+
     <div className="coachProfilePage">
       <div className="coachHero">
         <div className="coachHeroContent">
@@ -572,8 +693,8 @@ const deleteApplication = useCallback(async (appId) => {
                     <label>Region</label>
 
                     <datalist id="region-options">
-                      {REGIONS.map((r) => (
-                        <option key={r} value={r} />
+                      {REGIONS.map((region) => (
+                        <option key={region} value={region} />
                       ))}
                     </datalist>
                   </div>
@@ -679,54 +800,63 @@ const deleteApplication = useCallback(async (appId) => {
 
       {!editMode && (
         <div className="dashboardActions">
-          <button
-            className="primaryBtn"
-            type="button"
-            onClick={() => {
-              setShowJobForm(true);
-              setShowCoaches(false);
-              setShowApplications(false);
-              setEditingJob(null);
-              resetJobForm();
-            }}
-          >
-            {isAccessAcademy ? "Request Job Post Approval" : "Add Job Post"}
-          </button>
-
-          <button
-            className="secondaryBtn"
-            type="button"
-            onClick={async () => {
-              await fetchApplications();
-              setShowApplications(true);
-              setShowCoaches(false);
-              setShowJobForm(false);
-              setEditingJob(null);
-            }}
-          >
-            View Applications
-          </button>
-
-          {isMemberAcademy && (
-            <button
-              className="secondaryBtn"
-              type="button"
-              onClick={() => {
-                setShowCoaches(true);
-                setShowApplications(false);
-                setShowJobForm(false);
-                setEditingJob(null);
-              }}
-            >
-              View Coaches
-            </button>
-          )}
-
-          {isAccessAcademy && (
+          {!membershipActive ? (
             <p className="muted">
-              Your Access plan requires admin approval for job posts. Coach
-              database access is available with the Member plan.
+              Your membership has expired. Please request an extension to
+              continue using job posts, applications and coach database access.
             </p>
+          ) : (
+            <>
+              <button
+                className="primaryBtn"
+                type="button"
+                onClick={() => {
+                  setShowJobForm(true);
+                  setShowCoaches(false);
+                  setShowApplications(false);
+                  setEditingJob(null);
+                  resetJobForm();
+                }}
+              >
+                {isAccessAcademy ? "Request Job Post Approval" : "Add Job Post"}
+              </button>
+
+              <button
+                className="secondaryBtn"
+                type="button"
+                onClick={async () => {
+                  await fetchApplications();
+                  setShowApplications(true);
+                  setShowCoaches(false);
+                  setShowJobForm(false);
+                  setEditingJob(null);
+                }}
+              >
+                View Applications
+              </button>
+
+              {isMemberAcademy && (
+                <button
+                  className="secondaryBtn"
+                  type="button"
+                  onClick={() => {
+                    setShowCoaches(true);
+                    setShowApplications(false);
+                    setShowJobForm(false);
+                    setEditingJob(null);
+                  }}
+                >
+                  View Coaches
+                </button>
+              )}
+
+              {isAccessAcademy && (
+                <p className="muted">
+                  Your Access plan requires admin approval for job posts. Coach
+                  database access is available with the Member plan.
+                </p>
+              )}
+            </>
           )}
         </div>
       )}
@@ -814,7 +944,7 @@ const deleteApplication = useCallback(async (appId) => {
         </div>
       )}
 
-      {showJobForm && !showCoaches && !showApplications && (
+      {membershipActive && showJobForm && !showCoaches && !showApplications && (
         <div className="card">
           <h3>
             {editingJob
@@ -918,7 +1048,7 @@ const deleteApplication = useCallback(async (appId) => {
         </div>
       )}
 
-      {showApplications && (
+      {membershipActive && showApplications && (
         <div className="editSection">
           <h3 className="sectionTitle">Job Applications</h3>
 
@@ -969,23 +1099,23 @@ const deleteApplication = useCallback(async (appId) => {
                     <strong>Status:</strong> {app.status || "pending"}
                   </p>
 
-             <div className="jobActions">
-  <button
-    className="secondaryBtn"
-    type="button"
-    onClick={() => navigate(`/coach/${app.coachId}`)}
-  >
-    View Profile
-  </button>
+                  <div className="jobActions">
+                    <button
+                      className="secondaryBtn"
+                      type="button"
+                      onClick={() => navigate(`/coach/${app.coachId}`)}
+                    >
+                      View Profile
+                    </button>
 
-  <button
-    className="dangerBtn"
-    type="button"
-    onClick={() => deleteApplication(app.id)}
-  >
-    Delete
-  </button>
-</div>
+                    <button
+                      className="dangerBtn"
+                      type="button"
+                      onClick={() => deleteApplication(app.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -993,7 +1123,7 @@ const deleteApplication = useCallback(async (appId) => {
         </div>
       )}
 
-      {!showCoaches && !showApplications && (
+      {membershipActive && !showCoaches && !showApplications && (
         <div className="jobsList">
           {jobs.map((job) => (
             <div key={job.id} className="card">
@@ -1053,7 +1183,7 @@ const deleteApplication = useCallback(async (appId) => {
         </div>
       )}
 
-      {showCoaches && isMemberAcademy && (
+      {membershipActive && showCoaches && isMemberAcademy && (
         <div className="editSection">
           <CoachList onClose={() => setShowCoaches(false)} />
         </div>
@@ -1081,7 +1211,34 @@ const deleteApplication = useCallback(async (appId) => {
           </div>
         </div>
       )}
+{confirmModal.show && (
+  <div className="modalOverlay" onClick={closeConfirmModal}>
+    <div className="successModal" onClick={(e) => e.stopPropagation()}>
+      <div className="successIcon dangerIcon">!</div>
 
+      <h3>{confirmModal.title}</h3>
+      <p>{confirmModal.message}</p>
+
+      <div className="confirmActions">
+        <button
+          className="secondaryBtn"
+          type="button"
+          onClick={closeConfirmModal}
+        >
+          Cancel
+        </button>
+
+        <button
+          className={confirmModal.danger ? "dangerBtn" : "primaryBtn"}
+          type="button"
+          onClick={handleConfirmAction}
+        >
+          {confirmModal.confirmText}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       {successModal.show && (
         <div className="modalOverlay" onClick={closeSuccessModal}>
           <div className="successModal" onClick={(e) => e.stopPropagation()}>
@@ -1101,5 +1258,6 @@ const deleteApplication = useCallback(async (appId) => {
         </div>
       )}
     </div>
-  );
+  </>
+);
 }

@@ -19,7 +19,8 @@ import { doc, setDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { v4 as uuidv4 } from "uuid";
-
+import { Link } from "react-router-dom";
+import SEO from "../../components/SEO";
 const EMAIL_API_URL =
   "https://email-api-vert-beta.vercel.app/api/send-registration-request";
 
@@ -251,7 +252,12 @@ const regions = [
 export default function CoachRegister() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-
+const [alertModal, setAlertModal] = useState({
+  show: false,
+  title: "",
+  message: "",
+  type: "error",
+});
   const [country, setCountry] = useState("RS");
   const callingCode = country ? `+${getCountryCallingCode(country)}` : "";
 
@@ -292,7 +298,52 @@ export default function CoachRegister() {
       });
     };
   }, []);
+function showAlert(title, message, type = "error") {
+  setAlertModal({
+    show: true,
+    title,
+    message,
+    type,
+  });
+}
 
+function closeAlert() {
+  setAlertModal({
+    show: false,
+    title: "",
+    message: "",
+    type: "error",
+  });
+}
+
+function getFriendlyAuthError(error) {
+  if (error.code === "auth/email-already-in-use") {
+    return {
+      title: "Email already exists",
+      message:
+        "This email address is already registered. Please use another email or log in to your existing account.",
+    };
+  }
+
+  if (error.code === "auth/invalid-email") {
+    return {
+      title: "Invalid email",
+      message: "Please enter a valid email address.",
+    };
+  }
+
+  if (error.code === "auth/weak-password") {
+    return {
+      title: "Password is too weak",
+      message: "Password should be at least 6 characters long.",
+    };
+  }
+
+  return {
+    title: "Something went wrong",
+    message: "Your request could not be sent. Please try again.",
+  };
+}
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
 
@@ -330,22 +381,25 @@ export default function CoachRegister() {
     e.preventDefault();
 
     if (!form.email || !form.password) {
-      alert("Email and password are required.");
+      showAlert("Missing information", "Email and password are required.");
       return;
     }
 
     if (!form.phone || !isValidPhoneNumber(form.phone)) {
-      alert("Please enter a valid phone number.");
+      showAlert("Invalid phone number", "Please enter a valid phone number.");
       return;
     }
 
     if (!form.membershipPlan) {
-      alert("Please choose a membership plan.");
+      showAlert("Membership required", "Please choose a membership plan.");
       return;
     }
 
     if (!form.acceptedTerms) {
-      alert("Please accept Terms of Use and Privacy Policy.");
+      showAlert(
+  "Terms required",
+  "Please accept Terms of Use and Privacy Policy before continuing."
+);
       return;
     }
 
@@ -454,25 +508,34 @@ export default function CoachRegister() {
       await signOut(auth);
       setSuccess(true);
     } catch (error) {
-      if (createdUser?.uid) {
-        try {
-          await deleteDoc(doc(db, "users", createdUser.uid));
-          await deleteDoc(doc(db, "coaches", createdUser.uid));
-          await deleteUser(createdUser);
-        } catch (cleanupError) {
-          console.error("Cleanup error:", cleanupError);
-        }
-      }
-
-      console.error(error);
-      alert(error.message);
-    } finally {
-      setLoading(false);
+  if (createdUser?.uid) {
+    try {
+      await deleteDoc(doc(db, "users", createdUser.uid));
+      await deleteDoc(doc(db, "coaches", createdUser.uid));
+      await deleteUser(createdUser);
+    } catch (cleanupError) {
+      console.error("Cleanup error:", cleanupError);
     }
   }
 
-  if (success) {
-    return (
+  console.error(error);
+
+  const friendlyError = getFriendlyAuthError(error);
+  showAlert(friendlyError.title, friendlyError.message);
+} finally {
+  setLoading(false);
+}
+  }
+
+if (success) {
+  return (
+    <>
+      <SEO
+        title="Coach Registration Submitted"
+        description="Your Tennis Coach Careers coach registration request has been submitted."
+        noindex
+      />
+
       <div className="authPage">
         <div className="authCard">
           <img
@@ -487,11 +550,19 @@ export default function CoachRegister() {
             Your coach profile is under review. We will contact you soon.
           </p>
         </div>
-      </div>
-    );
-  }
+         </div>
+    </>
+  );
+}
 
-  return (
+return (
+  <>
+    <SEO
+      title="Create a Tennis Coach Profile"
+      description="Create your professional tennis coach profile, showcase your coaching experience and connect with academies looking for tennis coaches worldwide."
+      url="https://tennis-coach-careers.com/register/coach"
+    />
+
     <div className="authPage">
       <div className="authCard">
         <img
@@ -812,10 +883,34 @@ export default function CoachRegister() {
           </Button>
         </form>
 
-        <div className="authFooter">
-          Already have an account? <b>Log in</b>
-        </div>
+       <div className="authFooter">
+  Already have an account?{" "}
+  <Link to="/login" className="authFooterLink">
+    Log in
+  </Link>
+</div>
+        {alertModal.show && (
+  <div className="authAlertOverlay" onClick={closeAlert}>
+    <div className="authAlertModal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`authAlertIcon ${
+          alertModal.type === "success" ? "success" : "error"
+        }`}
+      >
+        {alertModal.type === "success" ? "✓" : "!"}
       </div>
+
+      <h3>{alertModal.title}</h3>
+      <p>{alertModal.message}</p>
+
+      <button className="primaryBtn full" type="button" onClick={closeAlert}>
+        OK
+      </button>
     </div>
-  );
+  </div>
+)}
+      </div>
+       </div>
+  </>
+);
 }

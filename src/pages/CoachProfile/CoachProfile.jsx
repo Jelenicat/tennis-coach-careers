@@ -11,24 +11,24 @@ import {
   deleteObject,
 } from "firebase/storage";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
-
+import SEO from "../../components/SEO";
 const GALLERY_MAX = 2;
 
 const MEMBERSHIP_PLANS = [
   {
     id: "standard",
     name: "Standard",
-    price: "50€",
+    price: "50€ / year",
   },
   {
     id: "premium",
     name: "Premium",
-    price: "130€",
+    price: "130€ / year",
   },
   {
     id: "diamond",
     name: "Diamond",
-    price: "220€",
+    price: "220€ / year",
   },
 ];
 
@@ -64,7 +64,7 @@ export default function CoachProfile() {
   });
 
   const isOwner = authUser?.uid === id && authUser?.role === "coach";
-
+  const membershipActive = isProfileActive(coach?.expiresAt);
   useEffect(() => {
     if (!showLogoutModal) return;
 
@@ -104,16 +104,34 @@ export default function CoachProfile() {
     return () => unsub();
   }, [auth, navigate]);
 
-  useEffect(() => {
-    async function fetchCoach() {
-      const refDoc = doc(db, "coaches", id);
-      const snap = await getDoc(refDoc);
+ useEffect(() => {
+  if (!authUser) return;
 
-      if (!snap.exists()) return;
+  async function fetchCoach() {
+    const refDoc = doc(db, "coaches", id);
+    const snap = await getDoc(refDoc);
 
-      let data = snap.data();
-      const now = new Date();
+    if (!snap.exists()) {
+      navigate("/login", { replace: true });
+      return;
+    }
 
+    let data = snap.data();
+    const now = new Date();
+
+    const isAcademyViewer = authUser?.role === "academy";
+
+    const profileIsActive = isProfileActive(data.expiresAt);
+    const profileIsVisible = data.profileVisible !== false;
+    const profileIsApproved = data.approvalStatus === "approved";
+
+    if (
+      isAcademyViewer &&
+      (!profileIsApproved || !profileIsVisible || !profileIsActive)
+    ) {
+      navigate(-1);
+      return;
+    }
       if (
         data.nextMembershipPlan &&
         data.nextMembershipStartsAt &&
@@ -137,7 +155,7 @@ export default function CoachProfile() {
     }
 
     fetchCoach();
-  }, [id]);
+}, [id, authUser, navigate]);
 
   useEffect(() => {
     if (!isOwner && editMode) {
@@ -453,23 +471,46 @@ export default function CoachProfile() {
   const newCount = newGalleryImages.length;
   const remainingSlots = GALLERY_MAX - existingCount - newCount;
 
-  if (checkingAuth) {
-    return (
+if (checkingAuth) {
+  return (
+    <>
+      <SEO
+        title="Coach Profile"
+        description="Private coach profile."
+        noindex
+      />
+
       <div className="loader">
         <p>Checking access...</p>
       </div>
-    );
-  }
+    </>
+  );
+}
 
-  if (!coach || !formData) {
-    return (
+if (!coach || !formData) {
+  return (
+    <>
+      <SEO
+        title="Coach Profile"
+        description="Private coach profile."
+        noindex
+      />
+
       <div className="loader">
         <p>Loading profile...</p>
       </div>
-    );
-  }
+    </>
+  );
+}
 
-  return (
+return (
+  <>
+    <SEO
+      title={coach.fullName || "Coach Profile"}
+      description="Private coach profile."
+      noindex
+    />
+
     <div
       className="coachProfilePage"
       style={{ backgroundImage: "url(/images/tennis-bg.webp)" }}
@@ -581,32 +622,39 @@ export default function CoachProfile() {
               )}
 
               {isOwner && !editMode && (
-                <div className="heroActions">
-                  <button
-                    className="primaryBtn"
-                    type="button"
-                    onClick={() => navigate("/jobs")}
-                  >
-                    View Available Jobs
-                  </button>
+  <div className="heroActions">
+    {membershipActive ? (
+      <button
+        className="primaryBtn"
+        type="button"
+        onClick={() => navigate("/jobs")}
+      >
+        View Available Jobs
+      </button>
+    ) : (
+      <p className="muted">
+        Your membership has expired. Please request an extension to continue
+        accessing available jobs.
+      </p>
+    )}
 
-                  <button
-                    className="secondaryBtn editBtn"
-                    type="button"
-                    onClick={() => setEditMode(true)}
-                  >
-                    Edit Profile
-                  </button>
+    <button
+      className="secondaryBtn editBtn"
+      type="button"
+      onClick={() => setEditMode(true)}
+    >
+      Edit Profile
+    </button>
 
-                  <button
-                    className="logoutBtn"
-                    type="button"
-                    onClick={() => setShowLogoutModal(true)}
-                  >
-                    Log out
-                  </button>
-                </div>
-              )}
+    <button
+      className="logoutBtn"
+      type="button"
+      onClick={() => setShowLogoutModal(true)}
+    >
+      Log out
+    </button>
+  </div>
+)}
 
               {isOwner && editMode && (
                 <div className="editActions">
@@ -979,6 +1027,7 @@ export default function CoachProfile() {
           </div>
         </div>
       )}
-    </div>
-  );
+      </div>
+  </>
+);
 }

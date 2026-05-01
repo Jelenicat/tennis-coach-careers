@@ -14,7 +14,7 @@ import {
 import { db } from "../../firebase";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-
+import SEO from "../../components/SEO";
 export default function Jobs() {
   const navigate = useNavigate();
 
@@ -66,6 +66,8 @@ export default function Jobs() {
 
       if (coachSnap.exists()) {
         setCoach(coachSnap.data());
+      } else {
+        setCoach(null);
       }
 
       await fetchApplications(u.uid);
@@ -89,10 +91,11 @@ export default function Jobs() {
       const uniqueCountries = [
         ...new Set(jobsData.map((j) => j.country).filter(Boolean)),
       ];
+
       setCountries(uniqueCountries);
 
       const salaries = jobsData
-        .map((j) => Number(j.maxSalary))
+        .flatMap((j) => [Number(j.minSalary), Number(j.maxSalary)])
         .filter((s) => Number.isFinite(s) && s > 0);
 
       if (salaries.length) {
@@ -117,6 +120,30 @@ export default function Jobs() {
         ...d.data(),
       }))
     );
+  }
+
+  function parseSalary(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : 0;
+  }
+
+  function isProfileActive(value) {
+    if (!value) return false;
+
+    const date = value?.toDate
+      ? value.toDate()
+      : value?.seconds
+      ? new Date(value.seconds * 1000)
+      : new Date(value);
+
+    if (Number.isNaN(date.getTime())) return false;
+
+    return date > new Date();
+  }
+
+  function isCoachMembershipActive() {
+    if (userRole !== "coach") return true;
+    return isProfileActive(coach?.expiresAt);
   }
 
   function getMembershipKey() {
@@ -151,10 +178,7 @@ export default function Jobs() {
     }
 
     if (userRole !== "coach") {
-      openNotice(
-        "Coach account required",
-        "Only coaches can apply for jobs."
-      );
+      openNotice("Coach account required", "Only coaches can apply for jobs.");
       return;
     }
 
@@ -166,11 +190,16 @@ export default function Jobs() {
       return;
     }
 
-    if (hasApplied(job)) {
+    if (!isProfileActive(coach.expiresAt)) {
       openNotice(
-        "Already applied",
-        "You have already applied for this job."
+        "Membership expired",
+        "Your membership has expired. Please request an extension before applying for jobs."
       );
+      return;
+    }
+
+    if (hasApplied(job)) {
+      openNotice("Already applied", "You have already applied for this job.");
       return;
     }
 
@@ -229,11 +258,31 @@ export default function Jobs() {
         !filters.city ||
         job.city?.toLowerCase().includes(filters.city.toLowerCase());
 
-      const matchSalary =
-        !filters.minSalary ||
-        Number(job.maxSalary || 0) >= Number(filters.minSalary);
+      const selectedMinSalary = parseSalary(filters.minSalary);
+      const jobMinSalary = parseSalary(job.minSalary);
+      const jobMaxSalary = parseSalary(job.maxSalary);
 
-      return matchCountry && matchCity && matchSalary;
+      const matchSalary =
+        selectedMinSalary === 0 ||
+        jobMinSalary >= selectedMinSalary ||
+        jobMaxSalary >= selectedMinSalary;
+
+      const academyVisible = job.academyProfileVisible !== false;
+
+      const academyApproved =
+        !job.academyApprovalStatus || job.academyApprovalStatus === "approved";
+
+      const academyActive =
+        !job.academyExpiresAt || isProfileActive(job.academyExpiresAt);
+
+      return (
+        academyVisible &&
+        academyApproved &&
+        academyActive &&
+        matchCountry &&
+        matchCity &&
+        matchSalary
+      );
     });
   }, [jobs, filters]);
 
@@ -243,13 +292,41 @@ export default function Jobs() {
       return;
     }
 
+    if (userRole === "coach" && coach && !isCoachMembershipActive()) {
+      openNotice(
+        "Membership expired",
+        "Your membership has expired. Please request an extension before viewing job details."
+      );
+      return;
+    }
+
     action?.();
   }
 
   const salaryPercent =
     maxSalary > 0 ? (filters.minSalary / maxSalary) * 100 : 0;
 
-  return (
+ return (
+  <>
+    <SEO
+      title="Tennis Coaching Jobs Worldwide"
+      description="Browse tennis coaching jobs and academy opportunities worldwide. Find tennis coach roles by country, city and salary."
+      url="https://tennis-coach-careers.com/jobs"
+      jsonLd={{
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: "Tennis Coaching Jobs Worldwide",
+        url: "https://tennis-coach-careers.com/jobs",
+        description:
+          "Browse tennis coaching jobs and academy opportunities worldwide. Find tennis coach roles by country, city and salary.",
+        isPartOf: {
+          "@type": "WebSite",
+          name: "Tennis Coach Careers",
+          url: "https://tennis-coach-careers.com/",
+        },
+      }}
+    />
+
     <div className="jobsPage">
       <button className="backBtn" onClick={() => navigate(-1)}>
         ← Back
@@ -267,6 +344,7 @@ export default function Jobs() {
               }
             >
               <option value="">All countries</option>
+
               {countries.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -478,6 +556,7 @@ export default function Jobs() {
         <div className="authOverlay">
           <div className="authModal" onClick={(e) => e.stopPropagation()}>
             <h3>Login required</h3>
+
             <p>You must log in or sign up to view full job details and apply.</p>
 
             <div className="authActions">
@@ -507,6 +586,7 @@ export default function Jobs() {
         <div className="authOverlay">
           <div className="authModal" onClick={(e) => e.stopPropagation()}>
             <h3>{noticeModal.title}</h3>
+
             <p>{noticeModal.message}</p>
 
             <div className="authActions">
@@ -526,6 +606,7 @@ export default function Jobs() {
           </div>
         </div>
       )}
-    </div>
-  );
+       </div>
+  </>
+);
 }

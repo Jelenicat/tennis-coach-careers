@@ -2,15 +2,16 @@ import { useState } from "react";
 import Button from "../../components/ui/Button";
 import "../Register/auth.css";
 
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { createUserWithEmailAndPassword, deleteUser } from "firebase/auth";
+import { doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import "react-phone-number-input/style.css";
 import PhoneInput, {
   isValidPhoneNumber,
   getCountryCallingCode,
 } from "react-phone-number-input";
-
+import { Link } from "react-router-dom";
+import SEO from "../../components/SEO";
 const EMAIL_API_URL =
   "https://email-api-vert-beta.vercel.app/api/send-registration-request";
 
@@ -33,7 +34,12 @@ const academyMembershipPlans = [
 export default function AcademyRegister() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-
+const [alertModal, setAlertModal] = useState({
+  show: false,
+  title: "",
+  message: "",
+  type: "error",
+});
   const [country, setCountry] = useState("RS");
   const callingCode = country ? `+${getCountryCallingCode(country)}` : "";
 
@@ -58,7 +64,52 @@ export default function AcademyRegister() {
       [name]: type === "checkbox" ? checked : value,
     }));
   }
+function showAlert(title, message, type = "error") {
+  setAlertModal({
+    show: true,
+    title,
+    message,
+    type,
+  });
+}
 
+function closeAlert() {
+  setAlertModal({
+    show: false,
+    title: "",
+    message: "",
+    type: "error",
+  });
+}
+
+function getFriendlyAuthError(error) {
+  if (error.code === "auth/email-already-in-use") {
+    return {
+      title: "Email already exists",
+      message:
+        "This email address is already registered. Please use another email or log in to your existing account.",
+    };
+  }
+
+  if (error.code === "auth/invalid-email") {
+    return {
+      title: "Invalid email",
+      message: "Please enter a valid email address.",
+    };
+  }
+
+  if (error.code === "auth/weak-password") {
+    return {
+      title: "Password is too weak",
+      message: "Password should be at least 6 characters long.",
+    };
+  }
+
+  return {
+    title: "Something went wrong",
+    message: "Your request could not be sent. Please try again.",
+  };
+}
   async function sendAdminEmail(payload) {
     await fetch(EMAIL_API_URL, {
       method: "POST",
@@ -73,17 +124,20 @@ export default function AcademyRegister() {
     e.preventDefault();
 
     if (!form.phone || !isValidPhoneNumber(form.phone)) {
-      alert("Please enter a valid phone number.");
+      showAlert("Invalid phone number", "Please enter a valid phone number.");
       return;
     }
 
     if (!form.membershipPlan) {
-      alert("Please choose a membership plan.");
+     showAlert("Membership required", "Please choose a membership plan.");
       return;
     }
 
     if (!form.acceptedTerms) {
-      alert("Please accept Terms of Use and Privacy Policy.");
+     showAlert(
+  "Terms required",
+  "Please accept Terms of Use and Privacy Policy before continuing."
+);
       return;
     }
 
@@ -97,18 +151,19 @@ export default function AcademyRegister() {
       price: selectedPlan?.price || "",
       description: selectedPlan?.description || "",
     };
+setLoading(true);
 
-    setLoading(true);
+let createdUser = null;
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(
+try {
+  const userCredential = await createUserWithEmailAndPassword(
         auth,
         form.email,
         form.password
       );
 
       const uid = userCredential.user.uid;
-
+createdUser = userCredential.user;
       await setDoc(doc(db, "users", uid), {
         role: "academy",
         profileId: uid,
@@ -166,16 +221,35 @@ export default function AcademyRegister() {
       });
 
       setSuccess(true);
-    } catch (error) {
-      console.error(error);
-      alert(error.message);
-    } finally {
-      setLoading(false);
+   } catch (error) {
+  if (createdUser?.uid) {
+    try {
+      await deleteDoc(doc(db, "users", createdUser.uid));
+      await deleteDoc(doc(db, "academies", createdUser.uid));
+      await deleteUser(createdUser);
+    } catch (cleanupError) {
+      console.error("Cleanup error:", cleanupError);
     }
   }
 
-  if (success) {
-    return (
+  console.error(error);
+
+  const friendlyError = getFriendlyAuthError(error);
+  showAlert(friendlyError.title, friendlyError.message);
+} finally {
+  setLoading(false);
+}
+  }
+
+ if (success) {
+  return (
+    <>
+      <SEO
+        title="Academy Registration Submitted"
+        description="Your Tennis Coach Careers academy registration request has been submitted."
+        noindex
+      />
+
       <div className="authPage">
         <div className="authCard">
           <img
@@ -191,10 +265,18 @@ export default function AcademyRegister() {
           </p>
         </div>
       </div>
-    );
-  }
+    </>
+  );
+}
 
-  return (
+return (
+  <>
+    <SEO
+      title="Register Your Tennis Academy"
+      description="Register your tennis academy or club on Tennis Coach Careers, publish tennis coaching jobs and connect with qualified tennis coaches worldwide."
+      url="https://tennis-coach-careers.com/register/academy"
+    />
+
     <div className="authPage">
       <div className="authCard">
         <img
@@ -364,7 +446,34 @@ export default function AcademyRegister() {
             {loading ? "Sending..." : "Create Profile"}
           </Button>
         </form>
+        <div className="authFooter">
+  Already have an account?{" "}
+  <Link to="/login" className="authFooterLink">
+    Log in
+  </Link>
+</div>
+{alertModal.show && (
+  <div className="authAlertOverlay" onClick={closeAlert}>
+    <div className="authAlertModal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`authAlertIcon ${
+          alertModal.type === "success" ? "success" : "error"
+        }`}
+      >
+        {alertModal.type === "success" ? "✓" : "!"}
+      </div>
+
+      <h3>{alertModal.title}</h3>
+      <p>{alertModal.message}</p>
+
+      <button className="primaryBtn full" type="button" onClick={closeAlert}>
+        OK
+      </button>
+    </div>
+  </div>
+)}
       </div>
     </div>
-  );
+  </>
+);
 }

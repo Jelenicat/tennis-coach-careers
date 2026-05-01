@@ -4,6 +4,7 @@ import "./AdminPanel.css";
 import {
   collection,
   getDocs,
+  getDoc,
   query,
   where,
   addDoc,
@@ -19,17 +20,16 @@ import { onAuthStateChanged } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 import { auth, db, storage } from "../../firebase";
-
+import SEO from "../../components/SEO";
 const ADMIN_EMAIL = "jelenatanaskovicj@gmail.com";
 const COACH_MEMBERSHIP_PLANS = [
-  { id: "standard", name: "Standard", price: "50€" },
-  { id: "premium", name: "Premium", price: "130€" },
-  { id: "diamond", name: "Diamond", price: "220€" },
+  { id: "standard", name: "Standard", price: "50€ / year" },
+  { id: "premium", name: "Premium", price: "130€ / year" },
+  { id: "diamond", name: "Diamond", price: "220€ / year" },
 ];
-
 const ACADEMY_MEMBERSHIP_PLANS = [
-  { id: "access", name: "Access", price: "50€" },
-  { id: "member", name: "Member", price: "150€" },
+  { id: "access", name: "Access", price: "Free" },
+  { id: "member", name: "Member", price: "300€ / year" },
 ];
 export default function AdminPanel() {
   const [coaches, setCoaches] = useState([]);
@@ -501,45 +501,90 @@ function getMembershipPlanById(type, planId) {
   }
 
   async function approveJobPostRequest(request) {
-    openConfirm({
-      title: "Approve job post",
-      message: "Approve and publish this job post?",
-      confirmText: "Approve",
-      onConfirm: async () => {
-        try {
-          await addDoc(collection(db, "academies", request.academyId, "jobs"), {
-            title: request.title || "",
-            minSalary: request.minSalary || "",
-            maxSalary: request.maxSalary || "",
-            benefits: request.benefits || "",
-            description: request.description || "",
-            date: request.date || "",
-            country: request.country || "",
-            city: request.city || "",
-            address: request.address || "",
+  openConfirm({
+    title: "Approve job post",
+    message: "Approve and publish this job post?",
+    confirmText: "Approve",
+    onConfirm: async () => {
+      try {
+      const academySnap = await getDoc(doc(db, "academies", request.academyId));
+const academyData = academySnap.exists() ? academySnap.data() : null;
 
-            academyId: request.academyId,
-            academyName: request.academyName || "",
-            academyEmail: request.academyEmail || "",
-            createdAt: serverTimestamp(),
-            approvedFromRequestId: request.id,
-          });
-
-          await updateDoc(doc(db, "jobPostRequests", request.id), {
-            status: "approved",
-            approvedAt: serverTimestamp(),
-          });
-
-          await fetchJobPostRequests();
-
-          showToast("Job post approved and published.");
-        } catch (error) {
-          console.error(error);
-          showToast("Failed to approve job post.", "error");
+        if (!academyData) {
+          showToast("Academy profile could not be found.", "error");
+          return;
         }
-      },
-    });
-  }
+
+        const academyExpiresAt =
+          academyData.expiresAt || request.academyExpiresAt || null;
+
+        const expiryDate = academyExpiresAt?.toDate
+          ? academyExpiresAt.toDate()
+          : academyExpiresAt
+          ? new Date(academyExpiresAt)
+          : null;
+
+        const academyIsExpired =
+          !expiryDate || Number.isNaN(expiryDate.getTime())
+            ? true
+            : expiryDate <= new Date();
+
+        if (
+          academyData.approvalStatus !== "approved" ||
+          academyData.profileVisible === false ||
+          academyIsExpired
+        ) {
+          showToast(
+            "This academy is not active. The job post cannot be published.",
+            "error"
+          );
+          return;
+        }
+
+        await addDoc(collection(db, "academies", request.academyId, "jobs"), {
+          title: request.title || "",
+          minSalary: request.minSalary || "",
+          maxSalary: request.maxSalary || "",
+          benefits: request.benefits || "",
+          description: request.description || "",
+          date: request.date || "",
+          country: request.country || "",
+          city: request.city || "",
+          address: request.address || "",
+
+          academyId: request.academyId,
+          academyName:
+            academyData.organisationName || request.academyName || "",
+          academyEmail: academyData.email || request.academyEmail || "",
+
+          academyMembershipPlan:
+            academyData.membershipPlan || request.membershipPlan || "",
+          academyMembership:
+            academyData.membership || request.membership || null,
+          academyExpiresAt,
+          academyProfileVisible: academyData.profileVisible !== false,
+          academyApprovalStatus: academyData.approvalStatus || "approved",
+
+          createdAt: serverTimestamp(),
+          approvedFromRequestId: request.id,
+        });
+
+        await updateDoc(doc(db, "jobPostRequests", request.id), {
+          status: "approved",
+          approvedAt: serverTimestamp(),
+        });
+
+        await fetchJobPostRequests();
+
+        showToast("Job post approved and published.");
+      } catch (error) {
+        console.error(error);
+        showToast("Failed to approve job post.", "error");
+      }
+    },
+  });
+}
+
 
   async function rejectJobPostRequest(requestId) {
     openConfirm({
@@ -574,18 +619,32 @@ function getMembershipPlanById(type, planId) {
       if (!response.ok) throw new Error("Approve failed");
 
       const collectionName = type === "coach" ? "coaches" : "academies";
-      const selectedMembership =
-        getMembershipPlanId(profile) === "unknown"
-          ? "basic"
-          : getMembershipPlanId(profile);
+    const fallbackMembership = type === "coach" ? "standard" : "access";
+
+const selectedMembership =
+  getMembershipPlanId(profile) === "unknown"
+    ? fallbackMembership
+    : getMembershipPlanId(profile);
+
+const selectedPlan =
+  getMembershipPlanById(type, selectedMembership) || {
+    id: selectedMembership,
+    name: selectedMembership,
+    price: "",
+  };
 
       await updateDoc(doc(db, collectionName, profile.id), {
-        approvalStatus: "approved",
-        profileVisible: true,
-        approvedAt: serverTimestamp(),
-        expiresAt: Timestamp.fromDate(getOneYearFromNow()),
-        membershipPlan: selectedMembership,
-      });
+  approvalStatus: "approved",
+  profileVisible: true,
+  approvedAt: serverTimestamp(),
+  expiresAt: Timestamp.fromDate(getOneYearFromNow()),
+  membershipPlan: selectedPlan.id,
+  membership: {
+    id: selectedPlan.id,
+    name: selectedPlan.name,
+    price: selectedPlan.price,
+  },
+});
 
       await fetchRequests();
       await fetchActiveProfiles();
@@ -603,12 +662,14 @@ function getMembershipPlanById(type, planId) {
   const requestedPlanId = getRequestedExtensionPlanId(profile);
   const requestedPlanName = getRequestedExtensionLabel(profile);
 
-  const requestedMembership =
-    profile.requestedExtensionMembership || {
-      id: requestedPlanId,
-      name: requestedPlanName,
-      price: "Paid",
-    };
+const requestedPlan = getMembershipPlanById(type, requestedPlanId);
+
+const requestedMembership =
+  profile.requestedExtensionMembership || {
+    id: requestedPlanId,
+    name: requestedPlan?.name || requestedPlanName,
+    price: requestedPlan?.price || "",
+  };
 
   const currentPlanId = getMembershipPlanId(profile);
   const isSamePlan = currentPlanId === requestedPlanId;
@@ -697,23 +758,21 @@ await updateDoc(doc(db, collectionName, profile.id), {
   previousMembershipPlan: fromPlan,
 
   membershipPlan: toPlan,
-  membership: {
-    id: toPlan,
-    name:
-      profile.requestedUpgradeMembership?.name || toPlan,
-    price:
-      profile.requestedUpgradeMembership?.price ||
-      profile.membership?.price ||
-      "Paid",
-  },
-
+membership: {
+  id: toPlan,
+  name: profile.requestedUpgradeMembership?.name || toPlanName,
+  price:
+    profile.requestedUpgradeMembership?.price ||
+    getMembershipPlanById(type, toPlan)?.price ||
+    "",
+},
   nextMembershipPlan: null,
   nextMembership: null,
   nextMembershipStartsAt: null,
 
   upgradeRequested: false,
   requestedUpgradeTo: null,
-  requestedUpgradeMembership: null, // 🔥 DODAJ OVO
+  requestedUpgradeMembership: null,
   upgradeResolvedAt: serverTimestamp(),
 });
           await fetchActiveProfiles();
@@ -956,18 +1015,33 @@ async function changeProfileMembership(type, profile, planId) {
     }
   }
 
-  if (checkingAdmin) {
-    return (
+if (checkingAdmin) {
+  return (
+    <>
+      <SEO
+        title="Admin Panel"
+        description="Private admin area."
+        noindex
+      />
+
       <main className="adminPage">
         <div className="adminShell">
           <div className="adminLoading">Checking admin access...</div>
         </div>
       </main>
-    );
-  }
+    </>
+  );
+}
 
-  if (!isAdmin) {
-    return (
+if (!isAdmin) {
+  return (
+    <>
+      <SEO
+        title="Admin Panel"
+        description="Private admin area."
+        noindex
+      />
+
       <main className="adminPage">
         <div className="adminShell">
           <section className="adminSection">
@@ -978,10 +1052,17 @@ async function changeProfileMembership(type, profile, planId) {
           </section>
         </div>
       </main>
-    );
-  }
+    </>
+  );
+}
+return (
+  <>
+    <SEO
+      title="Admin Panel"
+      description="Private admin area."
+      noindex
+    />
 
-  return (
     <main className="adminPage">
       <div className="adminShell">
         <header className="adminHeader">
@@ -2219,5 +2300,6 @@ async function changeProfileMembership(type, profile, planId) {
         )}
       </div>
     </main>
-  );
+  </>
+);
 }

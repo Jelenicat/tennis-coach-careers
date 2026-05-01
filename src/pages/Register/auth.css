@@ -904,3 +904,123 @@ select:focus {
 .phoneField .PhoneInputInput {
   padding-left: 12px !important;
 }
+/* ===============================
+   NICE AUTH ALERT MODAL
+================================ */
+
+.authAlertOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(5, 25, 40, 0.78);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: authFadeIn 0.22s ease both;
+}
+
+.authAlertModal {
+  width: 100%;
+  max-width: 420px;
+  padding: 34px 28px;
+  border-radius: 26px;
+  text-align: center;
+  color: #fff;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.16),
+      rgba(255, 255, 255, 0.08)
+    ),
+    rgba(9, 34, 53, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.48);
+  animation: authScaleIn 0.22s ease both;
+}
+
+.authAlertIcon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #061524;
+  font-size: 30px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #facc15, #fde68a);
+  box-shadow: 0 12px 34px rgba(250, 204, 21, 0.38);
+}
+
+.authAlertIcon.error {
+  background: linear-gradient(135deg, #facc15, #fde68a);
+}
+
+.authAlertIcon.success {
+  background: linear-gradient(135deg, #22c55e, #bbf7d0);
+}
+
+.authAlertModal h3 {
+  margin: 0 0 10px;
+  font-size: 23px;
+  line-height: 1.2;
+}
+
+.authAlertModal p {
+  margin: 0 0 24px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+@keyframes authFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes authScaleIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 480px) {
+  .authAlertModal {
+    padding: 28px 20px;
+    border-radius: 24px;
+  }
+
+  .authAlertIcon {
+    width: 58px;
+    height: 58px;
+    font-size: 27px;
+  }
+
+  .authAlertModal h3 {
+    font-size: 21px;
+  }
+}
+
+.authFooterLink {
+  color: #facc15;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.authFooterLink:hover {
+  text-decoration: underline;
+}
