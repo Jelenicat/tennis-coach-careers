@@ -21,7 +21,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 import { auth, db, storage } from "../../firebase";
 import SEO from "../../components/SEO";
-const ADMIN_EMAIL = "jelenatanaskovicj@gmail.com";
+const ADMIN_EMAIL = "tenniscoachcareers@protonmail.com";
 const COACH_MEMBERSHIP_PLANS = [
   { id: "standard", name: "Standard", price: "50€ / year" },
   { id: "premium", name: "Premium", price: "130€ / year" },

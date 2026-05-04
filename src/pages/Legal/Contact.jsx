@@ -28,7 +28,7 @@ export default function Contact() {
           </p>
 
           <h2>Email</h2>
-          <p>support@tennis-coach-careers.com</p>
+          <p>tenniscoachcareers@protonmail.com</p>
 
           <h2>Business inquiries</h2>
           <p>
