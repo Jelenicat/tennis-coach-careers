@@ -429,7 +429,7 @@ export default function Jobs() {
                 }
                 style={{ cursor: "pointer" }}
               >
-                <h3>{job.title}</h3>
+                <h3>{user ? job.title : "Coaching job opportunity"}</h3>
 
                 <p className="jobMeta">
                   📍 {job.city || "—"}, {job.country || "—"}
