@@ -15,6 +15,7 @@ import { db } from "../../firebase";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import SEO from "../../components/SEO";
+
 export default function Jobs() {
   const navigate = useNavigate();
 
@@ -306,160 +307,160 @@ export default function Jobs() {
   const salaryPercent =
     maxSalary > 0 ? (filters.minSalary / maxSalary) * 100 : 0;
 
- return (
-  <>
-    <SEO
-      title="Tennis Coaching Jobs Worldwide"
-      description="Browse tennis coaching jobs and academy opportunities worldwide. Find tennis coach roles by country, city and salary."
-      url="https://tennis-coach-careers.com/jobs"
-      jsonLd={{
-        "@context": "https://schema.org",
-        "@type": "CollectionPage",
-        name: "Tennis Coaching Jobs Worldwide",
-        url: "https://tennis-coach-careers.com/jobs",
-        description:
-          "Browse tennis coaching jobs and academy opportunities worldwide. Find tennis coach roles by country, city and salary.",
-        isPartOf: {
-          "@type": "WebSite",
-          name: "Tennis Coach Careers",
-          url: "https://tennis-coach-careers.com/",
-        },
-      }}
-    />
+  return (
+    <>
+      <SEO
+        title="Tennis Coaching Jobs Worldwide"
+        description="Browse tennis coaching jobs and academy opportunities worldwide. Find tennis coach roles by country, city and salary."
+        url="https://tennis-coach-careers.com/jobs"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Tennis Coaching Jobs Worldwide",
+          url: "https://tennis-coach-careers.com/jobs",
+          description:
+            "Browse tennis coaching jobs and academy opportunities worldwide. Find tennis coach roles by country, city and salary.",
+          isPartOf: {
+            "@type": "WebSite",
+            name: "Tennis Coach Careers",
+            url: "https://tennis-coach-careers.com/",
+          },
+        }}
+      />
 
-    <div className="jobsPage">
-      <button className="backBtn" onClick={() => navigate(-1)}>
-        ← Back
-      </button>
+      <div className="jobsPage">
+        <button className="backBtn" onClick={() => navigate(-1)}>
+          ← Back
+        </button>
 
-      <h1>Available Coaching Jobs</h1>
+        <h1>Available Coaching Jobs</h1>
 
-      {!selectedJob && (
-        <>
-          <div className="jobsFilters animateFilters">
-            <select
-              value={filters.country}
-              onChange={(e) =>
-                setFilters({ ...filters, country: e.target.value })
-              }
-            >
-              <option value="">All countries</option>
+        {!selectedJob && (
+          <>
+            <div className="jobsFilters animateFilters">
+              <select
+                value={filters.country}
+                onChange={(e) =>
+                  setFilters({ ...filters, country: e.target.value })
+                }
+              >
+                <option value="">All countries</option>
 
-              {countries.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-
-            <input
-              placeholder="City"
-              value={filters.city ?? ""}
-              onChange={(e) =>
-                setFilters({ ...filters, city: e.target.value })
-              }
-            />
-
-            <div className="salarySlider" style={!user ? { opacity: 0.6 } : {}}>
-              <label>
-                Min salary:{" "}
-                <strong>€{filters.minSalary.toLocaleString()}</strong>
-              </label>
+                {countries.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
 
               <input
-                type="range"
-                min={0}
-                max={maxSalary}
-                step={100}
-                value={filters.minSalary}
-                disabled={!user}
-                style={{
-                  background: `linear-gradient(
-                    to right,
-                    #facc15 0%,
-                    #facc15 ${salaryPercent}%,
-                    rgba(255,255,255,0.3) ${salaryPercent}%,
-                    rgba(255,255,255,0.3) 100%
-                  )`,
-                }}
+                placeholder="City"
+                value={filters.city ?? ""}
                 onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    minSalary: Number(e.target.value),
-                  })
+                  setFilters({ ...filters, city: e.target.value })
                 }
               />
 
-              {!user && (
-                <small className="sliderHint">
-                  Log in to filter jobs by salary
-                </small>
-              )}
+              <div
+                className="salarySlider"
+                style={!user ? { opacity: 0.6 } : {}}
+              >
+                <label>
+                  Min salary:{" "}
+                  <strong>€{filters.minSalary.toLocaleString()}</strong>
+                </label>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={maxSalary}
+                  step={100}
+                  value={filters.minSalary}
+                  disabled={!user}
+                  style={{
+                    background: `linear-gradient(
+                      to right,
+                      #facc15 0%,
+                      #facc15 ${salaryPercent}%,
+                      rgba(255,255,255,0.3) ${salaryPercent}%,
+                      rgba(255,255,255,0.3) 100%
+                    )`,
+                  }}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      minSalary: Number(e.target.value),
+                    })
+                  }
+                />
+
+                {!user && (
+                  <small className="sliderHint">
+                    Log in to filter jobs by salary
+                  </small>
+                )}
+              </div>
+
+              <button
+                className="secondaryBtn"
+                onClick={() =>
+                  setFilters({ country: "", city: "", minSalary: 0 })
+                }
+              >
+                Reset
+              </button>
             </div>
 
-            <button
-              className="secondaryBtn"
-              onClick={() =>
-                setFilters({ country: "", city: "", minSalary: 0 })
-              }
-            >
-              Reset
-            </button>
-          </div>
+            <p className="jobsCount">
+              {filteredJobs.length} job{filteredJobs.length !== 1 && "s"} found
+            </p>
+          </>
+        )}
 
-          <p className="jobsCount">
-            {filteredJobs.length} job{filteredJobs.length !== 1 && "s"} found
-          </p>
-        </>
-      )}
+        {!selectedJob && (
+          <div className="jobsGrid">
+            {filteredJobs.map((job) => {
+              const applied = hasApplied(job);
 
-      {!selectedJob && (
-        <div className="jobsGrid">
-          {filteredJobs.map((job) => {
-            const applied = hasApplied(job);
+              return (
+                <div
+                  key={job.jobPath}
+                  className="jobCard"
+                  onClick={() =>
+                    requireAuth(() => {
+                      setSelectedJob(job);
+                    })
+                  }
+                  style={{ cursor: "pointer" }}
+                >
+                  <h3>{user ? job.title : "Coaching job opportunity"}</h3>
 
-            return (
-              <div
-                key={job.jobPath}
-                className="jobCard"
-                onClick={() =>
-                  requireAuth(() => {
-                    setSelectedJob(job);
-                  })
-                }
-                style={{ cursor: "pointer" }}
-              >
-                <h3>{user ? job.title : "Coaching job opportunity"}</h3>
+                  <p className="jobMeta">
+                    📍 {job.city || "—"}, {job.country || "—"}
+                  </p>
 
-                <p className="jobMeta">
-                  📍 {job.city || "—"}, {job.country || "—"}
-                </p>
+                  {user && <p className="jobOrg">{job.academyName}</p>}
 
-                {user && (
-                  <>
-                    <p className="jobOrg">{job.academyName}</p>
+                  <p className="jobMeta">
+                    💰{" "}
+                    {job.minSalary && job.maxSalary
+                      ? `€${Number(job.minSalary).toLocaleString()} – €${Number(
+                          job.maxSalary
+                        ).toLocaleString()}`
+                      : "Negotiable"}
+                  </p>
 
-                    <p className="jobMeta">
-                      💰{" "}
-                      {job.minSalary && job.maxSalary
-                        ? `€${Number(
-                            job.minSalary
-                          ).toLocaleString()} – €${Number(
-                            job.maxSalary
-                          ).toLocaleString()}`
-                        : "Negotiable"}
+                  <p className="jobDesc">
+                    <strong>Description:</strong> {job.description}
+                  </p>
+
+                  {job.benefits && (
+                    <p className="jobBenefits">
+                      <strong>Benefits:</strong> {job.benefits}
                     </p>
+                  )}
 
-                    <p className="jobDesc">
-                      <strong>Description:</strong> {job.description}
-                    </p>
-
-                    {job.benefits && (
-                      <p className="jobBenefits">
-                        <strong>Benefits:</strong> {job.benefits}
-                      </p>
-                    )}
-
+                  {user ? (
                     <div className="jobFooter">
                       <span className="jobDate">{job.date}</span>
 
@@ -474,139 +475,141 @@ export default function Jobs() {
                         {applied ? "Applied" : "Apply"}
                       </button>
                     </div>
-                  </>
-                )}
+                  ) : (
+                    <div className="jobFooter">
+                      <span className="jobDate">{job.date}</span>
 
-                {!user && (
-                  <div className="jobFooter">
-                    <span className="jobDate">{job.date}</span>
+                      <button
+                        className="primaryBtn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowAuthPrompt(true);
+                        }}
+                      >
+                        View / Apply
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
-                    <button
-                      className="primaryBtn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowAuthPrompt(true);
-                      }}
-                    >
-                      View / Apply
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+        {selectedJob && user && (
+          <div className="jobDetail">
+            <button
+              className="secondaryBtn"
+              onClick={() => setSelectedJob(null)}
+            >
+              ← Back to jobs
+            </button>
 
-      {selectedJob && user && (
-        <div className="jobDetail">
-          <button
-            className="secondaryBtn"
-            onClick={() => setSelectedJob(null)}
-          >
-            ← Back to jobs
-          </button>
+            <div className="jobCard expanded" style={{ cursor: "default" }}>
+              <h2>{selectedJob.title}</h2>
 
-          <div className="jobCard expanded" style={{ cursor: "default" }}>
-            <h2>{selectedJob.title}</h2>
+              <p className="jobOrg">{selectedJob.academyName}</p>
 
-            <p className="jobOrg">{selectedJob.academyName}</p>
-
-            <p className="jobMeta">
-              💰{" "}
-              {selectedJob.minSalary && selectedJob.maxSalary
-                ? `€${Number(
-                    selectedJob.minSalary
-                  ).toLocaleString()} – €${Number(
-                    selectedJob.maxSalary
-                  ).toLocaleString()}`
-                : "Negotiable"}{" "}
-              • 📍 {selectedJob.country}, {selectedJob.city},{" "}
-              {selectedJob.address}
-            </p>
-
-            <p className="jobAddress">{selectedJob.address}</p>
-
-            <p className="jobDesc">
-              <strong>Description:</strong>
-              <br />
-              {selectedJob.description}
-            </p>
-
-            {selectedJob.benefits && (
-              <p className="jobBenefits">
-                <strong>Benefits:</strong> {selectedJob.benefits}
+              <p className="jobMeta">
+                💰{" "}
+                {selectedJob.minSalary && selectedJob.maxSalary
+                  ? `€${Number(
+                      selectedJob.minSalary
+                    ).toLocaleString()} – €${Number(
+                      selectedJob.maxSalary
+                    ).toLocaleString()}`
+                  : "Negotiable"}{" "}
+                • 📍 {selectedJob.country}, {selectedJob.city},{" "}
+                {selectedJob.address}
               </p>
-            )}
 
-            <p className="jobDate">Posted: {selectedJob.date}</p>
+              <p className="jobAddress">{selectedJob.address}</p>
 
-            <button
-              className="primaryBtn"
-              disabled={hasApplied(selectedJob)}
-              onClick={() => handleApply(selectedJob)}
-            >
-              {hasApplied(selectedJob) ? "Applied" : "Apply for this job"}
-            </button>
-          </div>
-        </div>
-      )}
+              <p className="jobDesc">
+                <strong>Description:</strong>
+                <br />
+                {selectedJob.description}
+              </p>
 
-      {showAuthPrompt && (
-        <div className="authOverlay">
-          <div className="authModal" onClick={(e) => e.stopPropagation()}>
-            <h3>Login required</h3>
+              {selectedJob.benefits && (
+                <p className="jobBenefits">
+                  <strong>Benefits:</strong> {selectedJob.benefits}
+                </p>
+              )}
 
-            <p>You must log in or sign up to view full job details and apply.</p>
+              <p className="jobDate">Posted: {selectedJob.date}</p>
 
-            <div className="authActions">
-              <button className="primaryBtn" onClick={() => navigate("/login")}>
-                Log in
-              </button>
-
-              <button
-                className="secondaryBtn"
-                onClick={() => navigate("/choose-role")}
-              >
-                Sign up
-              </button>
-            </div>
-
-            <button
-              className="authClose"
-              onClick={() => setShowAuthPrompt(false)}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
-      {noticeModal.show && (
-        <div className="authOverlay">
-          <div className="authModal" onClick={(e) => e.stopPropagation()}>
-            <h3>{noticeModal.title}</h3>
-
-            <p>{noticeModal.message}</p>
-
-            <div className="authActions">
               <button
                 className="primaryBtn"
-                onClick={() =>
-                  setNoticeModal({
-                    show: false,
-                    title: "",
-                    message: "",
-                  })
-                }
+                disabled={hasApplied(selectedJob)}
+                onClick={() => handleApply(selectedJob)}
               >
-                OK
+                {hasApplied(selectedJob) ? "Applied" : "Apply for this job"}
               </button>
             </div>
           </div>
-        </div>
-      )}
-       </div>
-  </>
-);
+        )}
+
+        {showAuthPrompt && (
+          <div className="authOverlay">
+            <div className="authModal" onClick={(e) => e.stopPropagation()}>
+              <h3>Login required</h3>
+
+              <p>
+                You must log in or sign up to view full job details and apply.
+              </p>
+
+              <div className="authActions">
+                <button
+                  className="primaryBtn"
+                  onClick={() => navigate("/login")}
+                >
+                  Log in
+                </button>
+
+                <button
+                  className="secondaryBtn"
+                  onClick={() => navigate("/choose-role")}
+                >
+                  Sign up
+                </button>
+              </div>
+
+              <button
+                className="authClose"
+                onClick={() => setShowAuthPrompt(false)}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
+        {noticeModal.show && (
+          <div className="authOverlay">
+            <div className="authModal" onClick={(e) => e.stopPropagation()}>
+              <h3>{noticeModal.title}</h3>
+
+              <p>{noticeModal.message}</p>
+
+              <div className="authActions">
+                <button
+                  className="primaryBtn"
+                  onClick={() =>
+                    setNoticeModal({
+                      show: false,
+                      title: "",
+                      message: "",
+                    })
+                  }
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
 }
