@@ -34,27 +34,31 @@ export default function CoachList({ onClose }) {
   /* ================= FETCH COACHES ================= */
   useEffect(() => {
     async function fetchCoaches() {
-      const q = query(
-        collection(db, "coaches"),
-        where("approvalStatus", "==", "approved"),
-        where("profileVisible", "==", true),
-        where("expiresAt", ">", Timestamp.now())
-      );
+      try {
+        const q = query(
+          collection(db, "coaches"),
+          where("approvalStatus", "==", "approved"),
+          where("profileVisible", "==", true),
+          where("expiresAt", ">", Timestamp.now())
+        );
 
-      const snap = await getDocs(q);
+        const snap = await getDocs(q);
 
-      setCoaches(
-        snap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
-      );
+        setCoaches(
+          snap.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+        );
+      } catch (error) {
+        console.error("Error fetching coaches:", error);
+      }
     }
 
     fetchCoaches();
   }, []);
 
-  /* ================= SEARCH ================= */
+  /* ================= HELPERS ================= */
   const filteredCoaches = coaches.filter((coach) =>
     (coach.fullName || "").toLowerCase().includes(search.toLowerCase())
   );
@@ -71,13 +75,24 @@ export default function CoachList({ onClose }) {
     return `${parts[0]} ${parts[1][0]}.`;
   }
 
+  function handleClose() {
+    setShowAuthPrompt(false);
+
+    if (onClose) {
+      onClose();
+      return;
+    }
+
+    navigate("/");
+  }
+
   /* ================= RENDER ================= */
   return (
     <div
       className="coachOverlay"
       onClick={() => {
         if (showAuthPrompt) return;
-        onClose?.();
+        handleClose();
       }}
     >
       <div className="coachListCard" onClick={(e) => e.stopPropagation()}>
@@ -85,7 +100,11 @@ export default function CoachList({ onClose }) {
         <div className="coachListHeader">
           <h3>Available Coaches</h3>
 
-          <button className="secondaryBtn" type="button" onClick={onClose}>
+          <button
+            className="secondaryBtn"
+            type="button"
+            onClick={handleClose}
+          >
             Close
           </button>
         </div>
@@ -111,11 +130,13 @@ export default function CoachList({ onClose }) {
               <img
                 src={coach.profileImage || "/images/avatar-placeholder.png"}
                 className="coachAvatarSmall"
-                alt={coach.fullName || "Coach"}
+                alt={user ? coach.fullName || "Coach" : "Coach"}
               />
 
               <div>
-                <div className="coachName">{getDisplayName(coach.fullName)}</div>
+                <div className="coachName">
+                  {getDisplayName(coach.fullName)}
+                </div>
 
                 <div className="coachLocation">
                   {coach.region || coach.city || "—"}
@@ -143,7 +164,10 @@ export default function CoachList({ onClose }) {
         {/* AUTH MODAL */}
         {showAuthPrompt &&
           createPortal(
-            <div className="authOverlay authOverlayFull">
+            <div
+              className="authOverlay authOverlayFull"
+              onClick={() => setShowAuthPrompt(false)}
+            >
               <div
                 className="authModal authModalFull"
                 onClick={(e) => e.stopPropagation()}
@@ -158,7 +182,7 @@ export default function CoachList({ onClose }) {
                     type="button"
                     onClick={() => {
                       setShowAuthPrompt(false);
-                      onClose?.();
+                      handleClose();
                       navigate("/login");
                     }}
                   >
@@ -170,7 +194,7 @@ export default function CoachList({ onClose }) {
                     type="button"
                     onClick={() => {
                       setShowAuthPrompt(false);
-                      onClose?.();
+                      handleClose();
                       navigate("/choose-role");
                     }}
                   >
