@@ -192,15 +192,14 @@ return (
       <div className="membershipPlanCard blue">
         <div className="planTop">
           <span>Standard</span>
-          <strong>50€</strong>
-          <small>per year*</small>
+          <strong>Free</strong>
+          <small>no annual fee*</small>
         </div>
 
         <ul>
           <li>Public coach profile</li>
-          <li>5 job applications / month</li>
-          <li>CV advice</li>
-          <li>Video portfolio advice</li>
+          <li>2 job applications / month</li>
+        
         </ul>
 
         <Button onClick={() => navigate("/choose-role")}>Get Started</Button>
@@ -415,8 +414,9 @@ return (
           <div className="faqItem">
             <h4>Is membership required?</h4>
             <p>
-              Membership unlocks full access to job applications and profile
-              visibility.
+              Coaches can start with a free Standard membership. Premium and
+              Diamond plans unlock unlimited applications and extra professional
+              support.
             </p>
           </div>
 

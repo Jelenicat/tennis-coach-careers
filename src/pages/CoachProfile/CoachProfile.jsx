@@ -18,7 +18,7 @@ const MEMBERSHIP_PLANS = [
   {
     id: "standard",
     name: "Standard",
-    price: "50€ / year",
+    price: "Free",
   },
   {
     id: "premium",
@@ -252,6 +252,16 @@ export default function CoachProfile() {
 
   function getPlanById(planId) {
     return MEMBERSHIP_PLANS.find((plan) => plan.id === planId);
+  }
+
+  function getMembershipPrice() {
+    const planId = getCurrentMembershipId();
+
+    if (planId === "standard") {
+      return "Free";
+    }
+
+    return coach?.membership?.price || getPlanById(planId)?.price || "-";
   }
 
   async function requestExtension() {
@@ -772,7 +782,7 @@ return (
             </p>
 
             <p>
-              <strong>Price:</strong> {coach.membership?.price || "-"}
+              <strong>Price:</strong> {getMembershipPrice()}
             </p>
 
             <p>

@@ -230,6 +230,42 @@ export default function Jobs() {
     });
   }
 
+  function getApplicationTime(application) {
+    const value = application.createdAt;
+
+    if (!value) return 0;
+
+    if (value?.toDate) {
+      return value.toDate().getTime();
+    }
+
+    if (value?.seconds) {
+      return value.seconds * 1000;
+    }
+
+    const parsed = new Date(value).getTime();
+
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  function getMonthlyApplicationsCount() {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    return applications.filter((application) => {
+      const time = getApplicationTime(application);
+      if (!time) return false;
+
+      const date = new Date(time);
+
+      return (
+        date.getMonth() === currentMonth &&
+        date.getFullYear() === currentYear
+      );
+    }).length;
+  }
+
   async function handleApply(job) {
     if (isJobFilled(job)) {
       showFilledNotice();
@@ -269,10 +305,10 @@ export default function Jobs() {
 
     const membership = getMembershipKey();
 
-    if (membership === "standard" && applications.length >= 5) {
+    if (membership === "standard" && getMonthlyApplicationsCount() >= 2) {
       openNotice(
         "Application limit reached",
-        "Standard membership allows only 5 job applications. Please upgrade your membership to apply for more jobs."
+        "Free Standard membership allows 2 job applications per month. Please upgrade your membership to apply for more jobs."
       );
       return;
     }
@@ -302,6 +338,7 @@ export default function Jobs() {
       jobId: job.id,
       jobPath: job.jobPath,
       status: "pending",
+      createdAt: new Date().toISOString(),
     };
 
     setApplications((prev) => [...prev, newApplication]);

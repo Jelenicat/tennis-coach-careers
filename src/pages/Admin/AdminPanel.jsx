@@ -24,7 +24,7 @@ import { auth, db, storage } from "../../firebase";
 import SEO from "../../components/SEO";
 const ADMIN_EMAIL = "tenniscoachcareers@protonmail.com";
 const COACH_MEMBERSHIP_PLANS = [
-  { id: "standard", name: "Standard", price: "50€ / year" },
+  { id: "standard", name: "Standard", price: "Free" },
   { id: "premium", name: "Premium", price: "130€ / year" },
   { id: "diamond", name: "Diamond", price: "220€ / year" },
 ];

@@ -27,13 +27,13 @@ const EMAIL_API_URL =
 const GALLERY_MAX = 2;
 
 const coachMembershipPlans = [
-  {
-    id: "standard",
-    name: "Standard",
-    price: "50€ / year",
-    description:
-      "Public profile, 5 job applications per month, CV advice and video portfolio advice.",
-  },
+{
+  id: "standard",
+  name: "Standard",
+  price: "Free",
+  description:
+    "Public profile and 2 job applications per month.",
+},
   {
     id: "premium",
     name: "Premium",
