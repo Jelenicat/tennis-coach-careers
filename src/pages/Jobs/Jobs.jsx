@@ -211,6 +211,17 @@ export default function Jobs() {
     );
   }
 
+  function isJobFilled(job) {
+    return job.status === "filled" || job.jobVisible === false;
+  }
+
+  function showFilledNotice() {
+    openNotice(
+      "Position filled",
+      "Sorry, this job position has already been filled."
+    );
+  }
+
   function openNotice(title, message) {
     setNoticeModal({
       show: true,
@@ -220,6 +231,11 @@ export default function Jobs() {
   }
 
   async function handleApply(job) {
+    if (isJobFilled(job)) {
+      showFilledNotice();
+      return;
+    }
+
     if (!user) {
       setShowAuthPrompt(true);
       return;
@@ -324,10 +340,7 @@ const filteredJobs = useMemo(() => {
       const academyActive =
         !job.academyExpiresAt || isProfileActive(job.academyExpiresAt);
 
-      const jobIsOpen = job.status !== "filled" && job.jobVisible !== false;
-
       return (
-        jobIsOpen &&
         academyVisible &&
         academyApproved &&
         academyActive &&
@@ -473,19 +486,31 @@ const filteredJobs = useMemo(() => {
           <div className="jobsGrid">
             {filteredJobs.map((job) => {
               const applied = hasApplied(job);
+              const filled = isJobFilled(job);
 
               return (
                 <div
                   key={job.jobPath}
-                  className="jobCard"
-                  onClick={() =>
+                  className={`jobCard ${filled ? "jobCardFilled" : ""}`}
+                  onClick={() => {
+                    if (filled) {
+                      showFilledNotice();
+                      return;
+                    }
+
                     requireAuth(() => {
                       setSelectedJob(job);
-                    })
-                  }
+                    });
+                  }}
                   style={{ cursor: "pointer" }}
                 >
-                  <h3>{user ? job.title : "Coaching job opportunity"}</h3>
+                  <div className="jobTitleRow">
+                    <h3>
+                      {user || filled ? job.title : "Coaching job opportunity"}
+                    </h3>
+
+                    {filled && <span className="jobFilledBadge">Filled</span>}
+                  </div>
 
                   <p className="jobMeta">
                     📍 {job.city || "—"}, {job.country || "—"}
@@ -512,7 +537,27 @@ const filteredJobs = useMemo(() => {
                     </p>
                   )}
 
-                  {user ? (
+                  {filled && (
+                    <p className="jobMeta">
+                      ✅ This position has been filled.
+                    </p>
+                  )}
+
+                  {filled ? (
+                    <div className="jobFooter">
+                      <span className="jobDate">{job.date}</span>
+
+                      <button
+                        className="primaryBtn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          showFilledNotice();
+                        }}
+                      >
+                        Filled
+                      </button>
+                    </div>
+                  ) : user ? (
                     <div className="jobFooter">
                       <span className="jobDate">{job.date}</span>
 
@@ -558,7 +603,13 @@ const filteredJobs = useMemo(() => {
             </button>
 
             <div className="jobCard expanded" style={{ cursor: "default" }}>
-              <h2>{selectedJob.title}</h2>
+              <div className="jobDetailTitleRow">
+                <h2>{selectedJob.title}</h2>
+
+                {isJobFilled(selectedJob) && (
+                  <span className="jobFilledBadge">Filled</span>
+                )}
+              </div>
 
               <p className="jobOrg">{selectedJob.academyName}</p>
 
@@ -589,14 +640,31 @@ const filteredJobs = useMemo(() => {
                 </p>
               )}
 
+              {isJobFilled(selectedJob) && (
+                <p className="jobMeta">
+                  ✅ This position has been filled.
+                </p>
+              )}
+
               <p className="jobDate">Posted: {selectedJob.date}</p>
 
               <button
                 className="primaryBtn"
-                disabled={hasApplied(selectedJob)}
-                onClick={() => handleApply(selectedJob)}
+                disabled={!isJobFilled(selectedJob) && hasApplied(selectedJob)}
+                onClick={() => {
+                  if (isJobFilled(selectedJob)) {
+                    showFilledNotice();
+                    return;
+                  }
+
+                  handleApply(selectedJob);
+                }}
               >
-                {hasApplied(selectedJob) ? "Applied" : "Apply for this job"}
+                {isJobFilled(selectedJob)
+                  ? "Filled"
+                  : hasApplied(selectedJob)
+                  ? "Applied"
+                  : "Apply for this job"}
               </button>
             </div>
           </div>

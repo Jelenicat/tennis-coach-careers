@@ -700,3 +700,59 @@
     text-align: center;
   }
 }
+
+.jobCardFilled {
+  position: relative;
+  opacity: 0.82;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+}
+
+.jobCardFilled::after {
+  content: "Filled";
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.16);
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.jobTitleRow,
+.jobDetailTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.jobTitleRow h3,
+.jobDetailTitleRow h2 {
+  margin-right: 76px;
+}
+
+.jobFilledBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(239, 68, 68, 0.16);
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.jobCardFilled .primaryBtn {
+  background: rgba(239, 68, 68, 0.85);
+  color: #fff;
+}

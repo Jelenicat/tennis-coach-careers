@@ -596,7 +596,7 @@ function getMembershipPlanById(type, planId) {
     openConfirm({
       title: "Mark job as filled",
       message:
-        "Mark this job as filled? It will disappear from the public jobs page, but it will stay visible in admin.",
+        "Mark this job as filled? It will stay visible on the public jobs page, but coaches will not be able to apply.",
       confirmText: "Mark as filled",
       danger: true,
       onConfirm: async () => {
