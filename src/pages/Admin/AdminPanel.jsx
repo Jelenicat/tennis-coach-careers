@@ -3,6 +3,7 @@ import "./AdminPanel.css";
 
 import {
   collection,
+  collectionGroup,
   getDocs,
   getDoc,
   query,
@@ -38,6 +39,7 @@ export default function AdminPanel() {
   const [activeAcademies, setActiveAcademies] = useState([]);
   const [blogPosts, setBlogPosts] = useState([]);
   const [jobPostRequests, setJobPostRequests] = useState([]);
+  const [publishedJobs, setPublishedJobs] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [loadingBlogs, setLoadingBlogs] = useState(false);
@@ -92,12 +94,14 @@ export default function AdminPanel() {
       fetchActiveProfiles();
       fetchBlogPosts();
       fetchJobPostRequests();
+      fetchPublishedJobs();
     }
   }, [isAdmin]);
 
   const pendingCount = coaches.length + academies.length;
   const activeProfilesCount = activeCoaches.length + activeAcademies.length;
   const jobPostRequestsCount = jobPostRequests.length;
+  const publishedJobsCount = publishedJobs.length;
 
   const expiringSoonProfiles = useMemo(() => {
     return [
@@ -184,6 +188,10 @@ export default function AdminPanel() {
   const searchedActiveAcademies = useMemo(() => {
     return filteredActiveAcademies.filter(matchesSearch);
   }, [filteredActiveAcademies, searchTerm]);
+
+  const searchedPublishedJobs = useMemo(() => {
+    return publishedJobs.filter(matchesJobSearch);
+  }, [publishedJobs, searchTerm]);
 
   function openProfileModal(type, profile) {
     setSelectedProfileType(type);
@@ -276,6 +284,28 @@ export default function AdminPanel() {
     return searchableText.includes(term);
   }
 
+  function matchesJobSearch(job) {
+    const term = normalizeText(searchTerm);
+    if (!term) return true;
+
+    const searchableText = [
+      job.title,
+      job.academyName,
+      job.academyEmail,
+      job.country,
+      job.city,
+      job.address,
+      job.status,
+      job.description,
+      job.benefits,
+      job.date,
+    ]
+      .map(normalizeText)
+      .join(" ");
+
+    return searchableText.includes(term);
+  }
+
   function getOneYearFromNow() {
     const date = new Date();
     date.setFullYear(date.getFullYear() + 1);
@@ -296,6 +326,49 @@ export default function AdminPanel() {
       month: "short",
       year: "numeric",
     });
+  }
+
+  function getJobTime(job) {
+    const value = job.date || job.createdAt;
+
+    if (!value) return 0;
+
+    if (value?.toDate) {
+      return value.toDate().getTime();
+    }
+
+    if (value?.seconds) {
+      return value.seconds * 1000;
+    }
+
+    if (typeof value === "string") {
+      const clean = value.trim().replace(/\.$/, "");
+
+      const isoMatch = clean.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+
+      if (isoMatch) {
+        const year = Number(isoMatch[1]);
+        const month = Number(isoMatch[2]);
+        const day = Number(isoMatch[3]);
+
+        return new Date(year, month - 1, day).getTime();
+      }
+
+      const dotMatch = clean.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+
+      if (dotMatch) {
+        const day = Number(dotMatch[1]);
+        const month = Number(dotMatch[2]);
+        const year = Number(dotMatch[3]);
+
+        return new Date(year, month - 1, day).getTime();
+      }
+
+      const parsed = new Date(clean).getTime();
+      return Number.isNaN(parsed) ? 0 : parsed;
+    }
+
+    return 0;
   }
 
   function getDaysUntilExpiry(expiresAt) {
@@ -500,6 +573,76 @@ function getMembershipPlanById(type, planId) {
     }
   }
 
+  async function fetchPublishedJobs() {
+    try {
+      const snap = await getDocs(collectionGroup(db, "jobs"));
+
+      const jobsData = snap.docs.map((docSnap) => ({
+        id: docSnap.id,
+        jobPath: docSnap.ref.path,
+        ...docSnap.data(),
+      }));
+
+      jobsData.sort((a, b) => getJobTime(b) - getJobTime(a));
+
+      setPublishedJobs(jobsData);
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to load published jobs.", "error");
+    }
+  }
+
+  async function markJobAsFilled(job) {
+    openConfirm({
+      title: "Mark job as filled",
+      message:
+        "Mark this job as filled? It will disappear from the public jobs page, but it will stay visible in admin.",
+      confirmText: "Mark as filled",
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await updateDoc(doc(db, job.jobPath), {
+            status: "filled",
+            jobVisible: false,
+            filledAt: serverTimestamp(),
+          });
+
+          await fetchPublishedJobs();
+
+          showToast("Job marked as filled.");
+        } catch (error) {
+          console.error(error);
+          showToast("Failed to mark job as filled.", "error");
+        }
+      },
+    });
+  }
+
+  async function reactivateJob(job) {
+    openConfirm({
+      title: "Reactivate job",
+      message: "Reactivate this job and show it again on the public jobs page?",
+      confirmText: "Reactivate",
+      onConfirm: async () => {
+        try {
+          await updateDoc(doc(db, job.jobPath), {
+            status: "active",
+            jobVisible: true,
+            filledAt: null,
+            reactivatedAt: serverTimestamp(),
+          });
+
+          await fetchPublishedJobs();
+
+          showToast("Job reactivated.");
+        } catch (error) {
+          console.error(error);
+          showToast("Failed to reactivate job.", "error");
+        }
+      },
+    });
+  }
+
   async function approveJobPostRequest(request) {
   openConfirm({
     title: "Approve job post",
@@ -551,6 +694,8 @@ const academyData = academySnap.exists() ? academySnap.data() : null;
           country: request.country || "",
           city: request.city || "",
           address: request.address || "",
+          status: "active",
+          jobVisible: true,
 
           academyId: request.academyId,
           academyName:
@@ -575,6 +720,7 @@ const academyData = academySnap.exists() ? academySnap.data() : null;
         });
 
         await fetchJobPostRequests();
+        await fetchPublishedJobs();
 
         showToast("Job post approved and published.");
       } catch (error) {
@@ -1079,6 +1225,7 @@ return (
                 fetchActiveProfiles();
                 fetchBlogPosts();
                 fetchJobPostRequests();
+                fetchPublishedJobs();
               }}
             >
               Refresh
@@ -1169,6 +1316,17 @@ return (
 
           <button
             className={`adminStatCard ${
+              activeTab === "jobs" ? "activeStatCard" : ""
+            }`}
+            type="button"
+            onClick={() => setActiveTab("jobs")}
+          >
+            <span>Published jobs</span>
+            <strong>{publishedJobsCount}</strong>
+          </button>
+
+          <button
+            className={`adminStatCard ${
               activeTab === "blog" ? "activeStatCard" : ""
             }`}
             type="button"
@@ -1205,6 +1363,14 @@ return (
           </button>
 
           <button
+            className={activeTab === "jobs" ? "activeTab" : ""}
+            type="button"
+            onClick={() => setActiveTab("jobs")}
+          >
+            Published jobs
+          </button>
+
+          <button
             className={activeTab === "blog" ? "activeTab" : ""}
             type="button"
             onClick={() => setActiveTab("blog")}
@@ -1218,7 +1384,7 @@ return (
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by name, email, phone, city, region, membership..."
+            placeholder="Search by name, email, phone, city, region, membership, job..."
           />
 
           {searchTerm && (
@@ -1874,6 +2040,119 @@ return (
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </section>
+          </>
+        )}
+
+
+        {activeTab === "jobs" && (
+          <>
+            <div className="adminDividerTitle">
+              Published jobs ({searchedPublishedJobs.length})
+            </div>
+
+            <section className="adminSection jobsSection">
+              <h2>All Published Jobs</h2>
+
+              {searchedPublishedJobs.length === 0 ? (
+                <p className="emptyText">No published jobs found.</p>
+              ) : (
+                <div className="requestGrid">
+                  {searchedPublishedJobs.map((job) => {
+                    const isFilled =
+                      job.status === "filled" || job.jobVisible === false;
+
+                    return (
+                      <div
+                        className={`requestCard ${
+                          isFilled ? "filledJobCard" : "activeJobCard"
+                        }`}
+                        key={job.jobPath}
+                      >
+                        <div className="cardTopLine">
+                          <span
+                            className={`typeBadge ${
+                              isFilled ? "filledJobBadge" : "activeJobBadge"
+                            }`}
+                          >
+                            {isFilled ? "Filled" : "Active job"}
+                          </span>
+
+                          <span>{formatDate(job.createdAt)}</span>
+                        </div>
+
+                        <h3>{job.title || "Untitled job"}</h3>
+
+                        <p>
+                          <strong>Academy:</strong> {job.academyName || "-"}
+                        </p>
+
+                        <p>
+                          <strong>Email:</strong> {job.academyEmail || "-"}
+                        </p>
+
+                        <p>
+                          <strong>Location:</strong> {job.city || "-"},{" "}
+                          {job.country || "-"}
+                        </p>
+
+                        <p>
+                          <strong>Address:</strong> {job.address || "-"}
+                        </p>
+
+                        <p>
+                          <strong>Salary:</strong>{" "}
+                          {job.minSalary && job.maxSalary
+                            ? `€${job.minSalary} – €${job.maxSalary}`
+                            : "Negotiable"}
+                        </p>
+
+                        <p className="jobStatusLine">
+                          <span
+                            className={`jobStatusDot ${
+                              isFilled ? "filled" : "active"
+                            }`}
+                          />
+                          <strong>Status:</strong>{" "}
+                          {isFilled ? "Filled" : "Active"}
+                        </p>
+
+                        <p>
+                          <strong>Date:</strong> {job.date || "-"}
+                        </p>
+
+                        <p>
+                          <strong>Description:</strong> {job.description || "-"}
+                        </p>
+
+                        <p>
+                          <strong>Benefits:</strong> {job.benefits || "-"}
+                        </p>
+
+                        <div className="requestActions">
+                          {isFilled ? (
+                            <button
+                              className="approveBtn"
+                              type="button"
+                              onClick={() => reactivateJob(job)}
+                            >
+                              Reactivate
+                            </button>
+                          ) : (
+                            <button
+                              className="rejectBtn"
+                              type="button"
+                              onClick={() => markJobAsFilled(job)}
+                            >
+                              Mark as filled
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </section>

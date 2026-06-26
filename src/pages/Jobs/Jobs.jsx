@@ -128,6 +128,53 @@ export default function Jobs() {
     return Number.isFinite(number) ? number : 0;
   }
 
+ function getJobTime(job) {
+  const value = job.date || job.createdAt;
+
+  if (!value) return 0;
+
+  // Firestore Timestamp
+  if (value?.toDate) {
+    return value.toDate().getTime();
+  }
+
+  // Firestore Timestamp object
+  if (value?.seconds) {
+    return value.seconds * 1000;
+  }
+
+  if (typeof value === "string") {
+    const clean = value.trim().replace(/\.$/, "");
+
+    // Format: 2026-06-12
+    const isoMatch = clean.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+
+    if (isoMatch) {
+      const year = Number(isoMatch[1]);
+      const month = Number(isoMatch[2]);
+      const day = Number(isoMatch[3]);
+
+      return new Date(year, month - 1, day).getTime();
+    }
+
+    // Format: 12.06.2026
+    const dotMatch = clean.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+
+    if (dotMatch) {
+      const day = Number(dotMatch[1]);
+      const month = Number(dotMatch[2]);
+      const year = Number(dotMatch[3]);
+
+      return new Date(year, month - 1, day).getTime();
+    }
+
+    const parsed = new Date(clean).getTime();
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  return 0;
+}
+
   function isProfileActive(value) {
     if (!value) return false;
 
@@ -249,8 +296,9 @@ export default function Jobs() {
     );
   }
 
-  const filteredJobs = useMemo(() => {
-    return jobs.filter((job) => {
+const filteredJobs = useMemo(() => {
+  return jobs
+    .filter((job) => {
       const matchCountry =
         !filters.country ||
         job.country?.toLowerCase().includes(filters.country.toLowerCase());
@@ -276,7 +324,10 @@ export default function Jobs() {
       const academyActive =
         !job.academyExpiresAt || isProfileActive(job.academyExpiresAt);
 
+      const jobIsOpen = job.status !== "filled" && job.jobVisible !== false;
+
       return (
+        jobIsOpen &&
         academyVisible &&
         academyApproved &&
         academyActive &&
@@ -284,8 +335,9 @@ export default function Jobs() {
         matchCity &&
         matchSalary
       );
-    });
-  }, [jobs, filters]);
+    })
+    .sort((a, b) => getJobTime(b) - getJobTime(a));
+}, [jobs, filters]);
 
   function requireAuth(action) {
     if (!user) {

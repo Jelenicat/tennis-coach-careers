@@ -736,3 +736,51 @@
 .manualMembershipBox option {
   color: #111;
 }
+.jobsSection {
+  border: 1px solid rgba(56, 189, 248, 0.28);
+}
+
+.activeJobCard {
+  border-color: rgba(22, 163, 74, 0.35);
+}
+
+.filledJobCard {
+  opacity: 0.72;
+  border-color: rgba(220, 38, 38, 0.35);
+  background: rgba(127, 29, 29, 0.22);
+}
+
+.activeJobBadge {
+  background: rgba(22, 163, 74, 0.22);
+  color: #bbf7d0;
+  border: 1px solid rgba(134, 239, 172, 0.35);
+}
+
+.filledJobBadge {
+  background: rgba(220, 38, 38, 0.22);
+  color: #fecaca;
+  border: 1px solid rgba(252, 165, 165, 0.35);
+}
+
+.jobStatusLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  font-weight: 800;
+}
+
+.jobStatusDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.jobStatusDot.active {
+  background: #22c55e;
+}
+
+.jobStatusDot.filled {
+  background: #ef4444;
+}
